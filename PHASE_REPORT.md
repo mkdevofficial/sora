@@ -141,9 +141,78 @@ During on-device testing on Android arm64, the bootstrap pipeline successfully e
 
 ---
 
+# Phase 3 Report — Run and Preview (`flutter run -d web-server`)
+
+## 1. What Was Done
+
+### 1.1 Project Management Architecture (`com.flide.project`)
+- **`FlutterProject.kt`**: Model representing Flutter projects with accessors for `rootDir`, `rootfsPath`, `mainDartFile`, `pubspecFile`, and validation status.
+- **`ProjectManager.kt`**:
+  - `scanProjects()`: Discovers and parses existing Flutter projects in `storageLayout.projectsDir` (mirrored to `/home/flide/projects` in PRoot). Reads `pubspec.yaml` description and version.
+  - `validateProjectName()`: Enforces Dart identifier conventions (lowercase, underscores, valid identifier, reserved keyword protection).
+  - `createProject()`: Executes `flutter create` inside PRoot with optional custom `--org` parameter.
+  - `deleteProject()`: Safely purges project directory and updates state flows.
+- **`CreateProjectDialog.kt`**:
+  - Interactive project creation dialog.
+  - Supports **"Run in Shell"** mode: switches directly into the interactive PTY terminal executing `flutter create <name>` in real-time, allowing the user to inspect the creation output directly.
+  - Supports **"Quick Create"** mode: executes creation and directly transitions into the IDE workspace.
+
+### 1.2 Flutter Run Controller (`com.flide.flutter.run`)
+- **`FlutterRunController.kt`**:
+  - Manages `flutter run -d web-server --web-hostname 127.0.0.1 --web-port <port>` process lifecycle inside Debian userland under PRoot.
+  - Automatic port conflict detection with `findAvailablePort(8080)`.
+  - ANSI escape code stripping and regex matching for Web server URLs (`http://127.0.0.1:<port>` / `http://localhost:<port>`) and DevTools URLs.
+  - Attached standard input (`stdin`) pipeline for interactive commands:
+    - **Hot Reload (`r`)**: Triggered on user demand or auto-save.
+    - **Hot Restart (`R`)**: Triggered via toolbar action.
+    - **Quit (`q`)**: Clean shutdown with fallback to `destroyForcibly()` if unresponsive.
+  - Transitions through explicit states: `Idle`, `Starting`, `Compiling`, `Running`, `Reloading`, `Restarting`, `Stopped`, `Error`.
+  - Integration with `IdeService`: Maintains Android foreground service and partial wake lock during active run sessions.
+
+### 1.3 In-App WebView Preview (`WebPreviewView.kt`)
+- Embedded Android `WebView` via Compose `AndroidView`:
+  - JavaScript, DOM storage, database, wide viewport, and overview mode enabled.
+  - `LOAD_NO_CACHE` and cache clearing enabled so hot reloads reflect immediately without stale scripts.
+  - Custom `WebViewClient` and `WebChromeClient` with progress bar and connection error handling with retry button.
+  - Top preview toolbar:
+    - Live URL indicator and status dot.
+    - Hot Reload (⚡ `r`) quick action.
+    - Hot Restart (🔄 `R`) quick action.
+    - WebView refresh button.
+    - External browser launch intent button (`Open in Chrome / Browser`).
+
+### 1.4 Run Console & Project File Editor (`RunConsoleView.kt` & `ProjectFileEditorView.kt`)
+- **`RunConsoleView.kt`**:
+  - Real-time auto-scrolling log console for `flutter run`.
+  - Filter chips: `All`, `Output`, `Errors`, `System`.
+  - Action buttons: Copy logs to clipboard, Clear console.
+- **`ProjectFileEditorView.kt`**:
+  - Embedded file browser (recursive file tree excluding `build/` and `.dart_tool/`).
+  - Text editor for editing `lib/main.dart` and other project files directly on device.
+  - Saving automatically triggers Hot Reload (`r`) when a run session is active.
+
+### 1.5 Integrated IDE Screen & Home Screen Updates (`IdeScreen.kt` & `HomeScreen.kt`)
+- **`IdeScreen.kt`**:
+  - Top app bar with project name, live status, Run/Stop toggle (▶/⏹), and quick Hot Reload/Restart buttons.
+  - Navigation tabs: **Preview**, **Editor**, **Console**, **Terminal** (embedded PTY shell running directly in `/home/flide/projects/<name>`).
+- **`HomeScreen.kt`**:
+  - Projects card list showing all created projects with "Open IDE & Run", "Shell", and "Delete" actions.
+  - "+ New Project" button opening the creation dialog.
+- **`AndroidManifest.xml`**:
+  - Enabled `android:usesCleartextTraffic="true"` to permit cleartext HTTP communication with the local web server on `http://127.0.0.1:<port>`.
+
+### 1.6 Unit Testing
+- Added `ProjectManagerTest.kt`: Tests project name validation (valid, invalid, reserved Dart keywords), pubspec YAML parsing, project discovery, and deletion.
+- Added `FlutterRunControllerTest.kt`: Tests ANSI sequence stripping, web server URL pattern matching, DevTools detection, and hot reload/restart output parsing.
+
+---
+
 ## 2. Next Steps
-1. Build debug APK on GitHub Actions (`mkdevofficial/sora`, commit `8d7c6ea`).
+1. Build debug APK on GitHub Actions (`mkdevofficial/sora`).
 2. Install APK on real device.
-3. Open Flide, tap **Install Flutter SDK** on the Home screen.
-4. Verify Flutter setup completes, `flutter --version` outputs Flutter stable, and `flutter doctor` verifies web toolchain.
-5. In the terminal, verify `flutter --version` and `which flutter` resolve directly from the shell prompt.
+3. In Flide:
+   - Tap **New Project** and create a project (e.g. `counter_app`).
+   - Open the IDE screen and tap **Run**.
+   - Verify the counter app displays in the in-app WebView.
+   - Switch to the Editor tab, make a change (e.g. modify counter text or theme color in `lib/main.dart`), tap **Save** (or tap ⚡ Hot Reload).
+   - Verify the change immediately reflects in the WebView without losing state!

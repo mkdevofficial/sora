@@ -19,6 +19,7 @@ import com.flide.data.settings.IdeSettings
 import com.flide.ui.env.SetupEnvironmentScreen
 import com.flide.ui.flutter.SetupFlutterScreen
 import com.flide.ui.home.HomeScreen
+import com.flide.ui.ide.IdeScreen
 import com.flide.ui.terminal.TerminalScreen
 import com.flide.ui.theme.FlideTheme
 
@@ -26,7 +27,8 @@ enum class Screen {
     Home,
     SetupEnvironment,
     Terminal,
-    SetupFlutter
+    SetupFlutter,
+    Ide
 }
 
 class MainActivity : ComponentActivity() {
@@ -41,6 +43,8 @@ class MainActivity : ComponentActivity() {
             val useDark = if (settings.darkTheme) true else isSystemInDarkTheme()
 
             var currentScreen by rememberSaveable { mutableStateOf(Screen.Home) }
+            var terminalWorkingDir by rememberSaveable { mutableStateOf("/home/flide") }
+            var terminalInitialCommand by rememberSaveable { mutableStateOf<String?>(null) }
 
             FlideTheme(darkTheme = useDark) {
                 Surface(modifier = Modifier.fillMaxSize()) {
@@ -48,8 +52,21 @@ class MainActivity : ComponentActivity() {
                         Screen.Home -> {
                             HomeScreen(
                                 onNavigateToSetup = { currentScreen = Screen.SetupEnvironment },
-                                onNavigateToTerminal = { currentScreen = Screen.Terminal },
-                                onNavigateToFlutterSetup = { currentScreen = Screen.SetupFlutter }
+                                onNavigateToTerminal = {
+                                    terminalWorkingDir = "/home/flide"
+                                    terminalInitialCommand = null
+                                    currentScreen = Screen.Terminal
+                                },
+                                onNavigateToFlutterSetup = { currentScreen = Screen.SetupFlutter },
+                                onOpenProject = { project ->
+                                    app.projectManager.selectProject(project)
+                                    currentScreen = Screen.Ide
+                                },
+                                onOpenInTerminalWithCommand = { workingDir, command ->
+                                    terminalWorkingDir = workingDir
+                                    terminalInitialCommand = command
+                                    currentScreen = Screen.Terminal
+                                }
                             )
                         }
                         Screen.SetupEnvironment -> {
@@ -58,7 +75,11 @@ class MainActivity : ComponentActivity() {
                             }
                             SetupEnvironmentScreen(
                                 onNavigateBack = { currentScreen = Screen.Home },
-                                onNavigateToTerminal = { currentScreen = Screen.Terminal }
+                                onNavigateToTerminal = {
+                                    terminalWorkingDir = "/home/flide"
+                                    terminalInitialCommand = null
+                                    currentScreen = Screen.Terminal
+                                }
                             )
                         }
                         Screen.Terminal -> {
@@ -66,7 +87,9 @@ class MainActivity : ComponentActivity() {
                                 currentScreen = Screen.Home
                             }
                             TerminalScreen(
-                                onNavigateBack = { currentScreen = Screen.Home }
+                                onNavigateBack = { currentScreen = Screen.Home },
+                                initialWorkingDir = terminalWorkingDir,
+                                initialCommand = terminalInitialCommand
                             )
                         }
                         Screen.SetupFlutter -> {
@@ -75,8 +98,26 @@ class MainActivity : ComponentActivity() {
                             }
                             SetupFlutterScreen(
                                 onNavigateBack = { currentScreen = Screen.Home },
-                                onNavigateToTerminal = { currentScreen = Screen.Terminal }
+                                onNavigateToTerminal = {
+                                    terminalWorkingDir = "/home/flide"
+                                    terminalInitialCommand = null
+                                    currentScreen = Screen.Terminal
+                                }
                             )
+                        }
+                        Screen.Ide -> {
+                            val activeProject by app.projectManager.activeProject.collectAsState()
+                            BackHandler {
+                                currentScreen = Screen.Home
+                            }
+                            activeProject?.let { proj ->
+                                IdeScreen(
+                                    project = proj,
+                                    onNavigateBack = { currentScreen = Screen.Home }
+                                )
+                            } ?: run {
+                                currentScreen = Screen.Home
+                            }
                         }
                     }
                 }

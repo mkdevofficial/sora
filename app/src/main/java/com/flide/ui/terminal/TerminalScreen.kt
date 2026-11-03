@@ -60,6 +60,8 @@ import com.termux.view.TerminalView
 @Composable
 fun TerminalScreen(
     onNavigateBack: () -> Unit,
+    initialWorkingDir: String = "/home/flide",
+    initialCommand: String? = null,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -98,7 +100,7 @@ fun TerminalScreen(
         terminalSessionRef?.finishIfRunning()
         val session = terminalManager.createSession(
             client = terminalClient,
-            workingDir = "/home/flide",
+            workingDir = initialWorkingDir,
             asRoot = true
         )
         terminalSessionRef = session
@@ -107,6 +109,9 @@ fun TerminalScreen(
             it.attachSession(session)
             it.updateSize()
             it.requestFocus()
+        }
+        if (!initialCommand.isNullOrBlank()) {
+            session.writeString("$initialCommand\n")
         }
     }
 

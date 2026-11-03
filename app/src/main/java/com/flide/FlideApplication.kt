@@ -27,6 +27,12 @@ class FlideApplication : Application() {
     lateinit var flutterManager: com.flide.flutter.FlutterManager
         private set
 
+    lateinit var projectManager: com.flide.project.ProjectManager
+        private set
+
+    lateinit var flutterRunController: com.flide.flutter.run.FlutterRunController
+        private set
+
     override fun onCreate() {
         super.onCreate()
         instance = this
@@ -50,6 +56,17 @@ class FlideApplication : Application() {
             storageLayout = storageLayout,
             prootRunner = environmentManager.prootRunner,
             settingsRepository = settingsRepository,
+            coroutineScope = appScope
+        )
+        projectManager = com.flide.project.ProjectManager(
+            storageLayout = storageLayout,
+            prootRunner = environmentManager.prootRunner,
+            coroutineScope = appScope
+        )
+        flutterRunController = com.flide.flutter.run.FlutterRunController(
+            context = this,
+            storageLayout = storageLayout,
+            prootRunner = environmentManager.prootRunner,
             coroutineScope = appScope
         )
     }
