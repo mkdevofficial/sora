@@ -41,6 +41,7 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
+    onNavigateToSetup: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val app = FlideApplication.instance
@@ -113,10 +114,9 @@ fun HomeScreen(
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Button(
-                        onClick = { /* Will trigger Phase 1 bootstrap */ },
-                        enabled = !settings.environmentConfigured
+                        onClick = onNavigateToSetup
                     ) {
-                        Text(text = "Set Up Environment")
+                        Text(text = if (settings.environmentConfigured) "View Environment" else "Set Up Environment")
                     }
                 }
             }

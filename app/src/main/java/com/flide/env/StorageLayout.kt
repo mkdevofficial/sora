@@ -17,6 +17,19 @@ class StorageLayout(val baseDir: File) {
     val downloadsDir: File = File(baseDir, "downloads")
     val projectsDir: File = File(baseDir, "projects")
     val logsDir: File = File(baseDir, "logs")
+    val binDir: File = File(baseDir, "bin")
+
+    val prootBin: File
+        get() = File(binDir, "proot")
+
+    val loaderBin: File
+        get() = File(binDir, "loader")
+
+    val libDir: File
+        get() = File(binDir, "lib")
+
+    val rootfsTarArchive: File
+        get() = File(downloadsDir, EnvironmentConfig.ROOTFS_ARCHIVE_NAME)
 
     /**
      * Path inside rootfs for the default non-root user 'flide'.
@@ -49,7 +62,9 @@ class StorageLayout(val baseDir: File) {
         return (rootfsDir.exists() || rootfsDir.mkdirs()) &&
                 (downloadsDir.exists() || downloadsDir.mkdirs()) &&
                 (projectsDir.exists() || projectsDir.mkdirs()) &&
-                (logsDir.exists() || logsDir.mkdirs())
+                (logsDir.exists() || logsDir.mkdirs()) &&
+                (binDir.exists() || binDir.mkdirs()) &&
+                (libDir.exists() || libDir.mkdirs())
     }
 
     /**
