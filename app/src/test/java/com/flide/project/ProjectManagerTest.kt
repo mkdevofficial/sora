@@ -33,7 +33,12 @@ class ProjectManagerTest {
 
         runner = ProotRunner(layout)
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
-        projectManager = ProjectManager(layout, runner, scope)
+        projectManager = ProjectManager(
+            storageLayout = layout,
+            prootRunner = runner,
+            coroutineScope = scope,
+            ioDispatcher = Dispatchers.Unconfined
+        )
     }
 
     @Test
@@ -82,7 +87,7 @@ class ProjectManagerTest {
         mainDart.parentFile?.mkdirs()
         mainDart.writeText("void main() {}")
 
-        projectManager.scanProjects()
+        projectManager.scanProjectsSync()
 
         val list = projectManager.projects.value
         assertEquals(1, list.size)
@@ -100,7 +105,7 @@ class ProjectManagerTest {
         projDir.mkdirs()
         File(projDir, "pubspec.yaml").writeText("name: to_delete\n")
 
-        projectManager.scanProjects()
+        projectManager.scanProjectsSync()
         assertEquals(1, projectManager.projects.value.size)
 
         val proj = projectManager.projects.value.first()

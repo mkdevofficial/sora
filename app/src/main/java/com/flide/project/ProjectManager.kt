@@ -4,6 +4,7 @@ import android.util.Log
 import com.flide.env.ProotRunner
 import com.flide.env.StorageLayout
 import com.flide.flutter.FlutterConfig
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +21,8 @@ import java.util.Locale
 class ProjectManager(
     private val storageLayout: StorageLayout,
     private val prootRunner: ProotRunner,
-    private val coroutineScope: CoroutineScope
+    private val coroutineScope: CoroutineScope,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
 
     private val _projects = MutableStateFlow<List<FlutterProject>>(emptyList())
@@ -34,30 +36,38 @@ class ProjectManager(
     }
 
     /**
-     * Scans the host projects directory and refreshes the projects list.
+     * Synchronously scans the host projects directory and updates the projects list.
      */
-    fun scanProjects() {
-        coroutineScope.launch(Dispatchers.IO) {
-            val list = mutableListOf<FlutterProject>()
-            val dir = storageLayout.projectsDir
-            if (dir.exists() && dir.isDirectory) {
-                dir.listFiles()?.forEach { file ->
-                    if (file.isDirectory) {
-                        val pubspec = File(file, "pubspec.yaml")
-                        if (pubspec.exists()) {
-                            val parsed = parsePubspec(file.name, file, pubspec)
-                            list.add(parsed)
-                        }
+    fun scanProjectsSync(): List<FlutterProject> {
+        val list = mutableListOf<FlutterProject>()
+        val dir = storageLayout.projectsDir
+        if (dir.exists() && dir.isDirectory) {
+            dir.listFiles()?.forEach { file ->
+                if (file.isDirectory) {
+                    val pubspec = File(file, "pubspec.yaml")
+                    if (pubspec.exists()) {
+                        val parsed = parsePubspec(file.name, file, pubspec)
+                        list.add(parsed)
                     }
                 }
             }
-            list.sortByDescending { it.lastModified }
-            _projects.value = list
+        }
+        list.sortByDescending { it.lastModified }
+        _projects.value = list
 
-            val currentActive = _activeProject.value
-            if (currentActive != null) {
-                _activeProject.value = list.find { it.name == currentActive.name }
-            }
+        val currentActive = _activeProject.value
+        if (currentActive != null) {
+            _activeProject.value = list.find { it.name == currentActive.name }
+        }
+        return list
+    }
+
+    /**
+     * Scans the host projects directory asynchronously.
+     */
+    fun scanProjects() {
+        coroutineScope.launch(ioDispatcher) {
+            scanProjectsSync()
         }
     }
 
@@ -95,7 +105,7 @@ class ProjectManager(
         name: String,
         org: String? = null,
         onOutput: (String) -> Unit = {}
-    ): Result<FlutterProject> = withContext(Dispatchers.IO) {
+    ): Result<FlutterProject> = withContext(ioDispatcher) {
         val validationError = validateProjectName(name)
         if (validationError != null) {
             return@withContext Result.failure(IllegalArgumentException(validationError))
@@ -139,7 +149,7 @@ class ProjectManager(
         val pubspec = File(hostProjectDir, "pubspec.yaml")
         val createdProject = parsePubspec(name, hostProjectDir, pubspec)
 
-        scanProjects()
+        scanProjectsSync()
         _activeProject.value = createdProject
         Result.success(createdProject)
     }
@@ -154,7 +164,7 @@ class ProjectManager(
             if (_activeProject.value?.name == project.name) {
                 _activeProject.value = null
             }
-            scanProjects()
+            scanProjectsSync()
         }
         return deleted
     }
