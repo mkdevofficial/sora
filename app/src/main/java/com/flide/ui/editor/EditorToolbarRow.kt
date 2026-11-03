@@ -13,9 +13,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Redo
 import androidx.compose.material.icons.automirrored.filled.Undo
+import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.Numbers
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -66,6 +70,9 @@ fun EditorToolbarRow(
     onToggleSearch: () -> Unit,
     onShowGotoLine: () -> Unit,
     onSaveRequested: () -> Unit,
+    problemsCount: Int = 0,
+    onShowProblems: () -> Unit = {},
+    onFormatRequested: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -141,6 +148,50 @@ fun EditorToolbarRow(
                     contentDescription = "Save file",
                     tint = Color(0xFF69F0AE)
                 )
+            }
+
+            // Quick Action: Format Code (dart format)
+            IconButton(
+                onClick = onFormatRequested,
+                modifier = Modifier.size(36.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AutoFixHigh,
+                    contentDescription = "Format Code",
+                    tint = Color(0xFFE040FB)
+                )
+            }
+
+            // Quick Action: Problems Panel (with badge)
+            IconButton(
+                onClick = onShowProblems,
+                modifier = Modifier.size(36.dp)
+            ) {
+                if (problemsCount > 0) {
+                    BadgedBox(
+                        badge = {
+                            Badge(containerColor = Color(0xFFFF5252)) {
+                                Text(
+                                    text = if (problemsCount > 99) "99+" else "$problemsCount",
+                                    fontSize = 9.sp,
+                                    color = Color.White
+                                )
+                            }
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = "Problems ($problemsCount)",
+                            tint = Color(0xFFFFD740)
+                        )
+                    }
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = "Problems (0)",
+                        tint = Color(0xFFB0BEC5)
+                    )
+                }
             }
 
             // Symbol Chips

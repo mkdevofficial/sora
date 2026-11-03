@@ -71,8 +71,25 @@ fun SoraEditorView(
                 isLineNumberEnabled = true
                 setPinLineNumber(true)
 
-                // Language & Syntax Highlighting
-                setEditorLanguage(EditorThemeManager.getLanguageForFile(file))
+                // Language & Syntax Highlighting / LSP
+                val baseLanguage = EditorThemeManager.getLanguageForFile(file)
+                val lspManager = com.flide.FlideApplication.instance.dartLspManager
+                val lspEditor = lspManager.getOrCreateLspEditor(file)
+
+                if (lspEditor != null) {
+                    lspEditor.wrapperLanguage = baseLanguage
+                    lspEditor.editor = this
+                    coroutineScope.launch {
+                        try {
+                            lspEditor.connect(true)
+                            lspEditor.openDocument()
+                        } catch (e: Exception) {
+                            Log.w("SoraEditorView", "LSP attach notice: ${e.message}")
+                        }
+                    }
+                } else {
+                    setEditorLanguage(baseLanguage)
+                }
 
                 // Load File Content
                 val initialText = if (file.exists()) {
@@ -98,6 +115,7 @@ fun SoraEditorView(
                             val currentText = text.toString()
                             file.parentFile?.mkdirs()
                             file.writeText(currentText)
+                            try { lspEditor?.saveDocumentBlocking() } catch (e: Exception) {}
                             onDirtyChanged(false)
                             onFileSaved(file)
                         } catch (e: Exception) {

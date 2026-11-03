@@ -266,8 +266,62 @@ During on-device testing on Android arm64, the bootstrap pipeline successfully e
 
 ---
 
+# Phase 5 Report — Dart Language Server (LSP)
+
+## 1. What Was Done
+
+### 1.1 LSP Client & Protocol Bridge (`editor-lsp` & `org.eclipse.lsp4j`)
+- Added `io.github.rosemoe:editor-lsp:0.24.5` and `org.eclipse.lsp4j:1.0.0` dependencies.
+- **`LspMessageTranslator.kt`**:
+  - Implemented framing and parsing of JSON-RPC protocol messages (`Content-Length: <n>\r\n\r\n`).
+  - Container/chroot path translation: automatically translates Android host sandbox paths (`/data/user/0/com.flide/...`) to PRoot Debian guest paths (`/home/flide/projects/...`) on outgoing messages, and translates guest paths back to host paths on incoming messages.
+  - Automatically recalculates `Content-Length` headers for altered JSON bodies.
+  - Intercepts `$/progress` and `workDoneProgress` notifications to report indexing/analysis state to the UI.
+- **`DartLspConnectionProvider.kt`**:
+  - Implements Sora Editor's `StreamConnectionProvider`.
+  - Spawns `/home/flide/flutter/bin/dart language-server --protocol=lsp` inside Debian under PRoot.
+  - Bridges `stdin` and `stdout` using buffered piped stream pumps and path translation.
+  - Captures `stderr` and monitors process lifetime with automatic crash detection.
+
+### 1.2 Dart LSP Manager & Lifecycle (`DartLspManager.kt`)
+- Integrated with `FlideApplication`:
+  - `initializeForProject(project)`: Prepares the `LspProject` workspace and registers `CustomLanguageServerDefinition`.
+  - `getOrCreateLspEditor(file)`: Connects active `.dart` files to the language server.
+  - `formatFile(file)`: Runs `/home/flide/flutter/bin/dart format` on demand or on save.
+  - `restartServer()`: Stops and restarts the analyzer process on demand or after a crash.
+  - **Lightweight Mode**: Can disable the Dart analyzer to save memory on low-spec phones, allowing pure TextMate editing.
+
+### 1.3 Diagnostics & Problems Panel (`ProblemsBottomSheet.kt` & `ProblemItem.kt`)
+- Real-time diagnostic collection:
+  - Error and warning underlines (squiggles) rendered directly in the code editor.
+  - Interactive **Problems Bottom Sheet** listing all diagnostics across open files:
+    - Filter chips: All, Errors (with count), Warnings (with count).
+    - Severity indicators (Error 🔴, Warning 🟡, Info 🔵).
+    - Human-readable file name and `[Line, Column]` coordinates.
+    - One-tap navigation: Tapping any problem opens that file in the editor and jumps directly to that line and column.
+
+### 1.4 UI Integration in `TabbedEditorView.kt` & `EditorToolbarRow.kt`
+- **LSP Status Pill**: Displays real-time analyzer state in the tab bar:
+  - `● LSP` (Ready 🟢)
+  - `⏳ Indexing` (Analysis in progress 🟡)
+  - `○ Starting` (Spawning process 🔵)
+  - `● Error` (Crashed/failed 🔴)
+  - `○ Light` (Lightweight mode ⚪)
+  - Tapping the pill opens a dialog to restart the analyzer or toggle Lightweight Mode.
+- **Problems Badge Button**: Displays current issue count (e.g. `⚠️ 3`). Tapping opens the Problems Bottom Sheet.
+- **Code Format Button (`🪄`)**: Formats the active Dart file with `dart format` in PRoot and updates the editor buffer.
+
+### 1.5 Unit Testing
+- Added `LspMessageTranslatorTest.kt`: Tests JSON-RPC framing, outgoing/incoming path translation, and progress detection.
+- Added `ProblemItemTest.kt`: Tests conversion of LSP4J `Diagnostic` objects to human-friendly problem items with 1-based indexing.
+
+---
+
 ## 2. Next Steps
 1. Build debug APK on GitHub Actions (`mkdevofficial/sora`).
 2. Install APK on real device.
-3. Test editor with VS Code Dark+ theme, Dart syntax highlighting, symbols row, tabs, and auto-save hot-reloading.
-4. Verify background execution with battery optimization disabled.
+3. Open a Flutter project in Flide:
+   - Verify the `● LSP` pill transitions from `Starting` -> `Indexing` -> `Ready`.
+   - Introduce a syntax or type error in `lib/main.dart` and verify squiggly underlines appear and the problem shows in the Problems panel.
+   - Tap the format button (`🪄`) to auto-format the file with `dart format`.
+   - Test completion popup when typing widget names.

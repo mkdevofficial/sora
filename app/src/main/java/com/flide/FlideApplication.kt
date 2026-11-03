@@ -33,6 +33,9 @@ class FlideApplication : Application() {
     lateinit var flutterRunController: com.flide.flutter.run.FlutterRunController
         private set
 
+    lateinit var dartLspManager: com.flide.editor.lsp.DartLspManager
+        private set
+
     override fun onCreate() {
         super.onCreate()
         instance = this
@@ -66,6 +69,10 @@ class FlideApplication : Application() {
         flutterRunController = com.flide.flutter.run.FlutterRunController(
             context = this,
             storageLayout = storageLayout,
+            prootRunner = environmentManager.prootRunner,
+            coroutineScope = appScope
+        )
+        dartLspManager = com.flide.editor.lsp.DartLspManager(
             prootRunner = environmentManager.prootRunner,
             coroutineScope = appScope
         )

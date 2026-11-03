@@ -37,6 +37,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -50,8 +52,10 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.flide.FlideApplication
 import com.flide.editor.EditorController
 import com.flide.editor.EditorTab
+import com.flide.editor.lsp.LspServerState
 import com.flide.project.FlutterProject
 import java.io.File
 
@@ -61,6 +65,19 @@ fun TabbedEditorView(
     onFileSaved: (File) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val app = FlideApplication.instance
+    val lspManager = app.dartLspManager
+    val lspState by lspManager.lspState.collectAsState()
+    val problems by lspManager.problems.collectAsState()
+    val isLightweight by lspManager.isLightweightMode.collectAsState()
+
+    var showProblemsSheet by remember { mutableStateOf(false) }
+    var showLspOptionsDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(project) {
+        lspManager.initializeForProject(project)
+    }
+
     val editorController = remember { EditorController() }
 
     // Tabs state
@@ -153,6 +170,68 @@ fun TabbedEditorView(
         }
     }
 
+    // Problems Panel Bottom Sheet
+    if (showProblemsSheet) {
+        ProblemsBottomSheet(
+            problems = problems,
+            onDismiss = { showProblemsSheet = false },
+            onSelectProblem = { problem ->
+                openFile(problem.file)
+                editorController.gotoLine(problem.line)
+            }
+        )
+    }
+
+    // Dart LSP Options Dialog
+    if (showLspOptionsDialog) {
+        AlertDialog(
+            onDismissRequest = { showLspOptionsDialog = false },
+            title = { Text("Dart Language Server (LSP)") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val statusDesc = when (val state = lspState) {
+                        is LspServerState.Ready -> "Status: Ready (Diagnostics, Completion & Hover active)"
+                        is LspServerState.Indexing -> "Status: ${state.title}"
+                        is LspServerState.Starting -> "Status: Starting analyzer process..."
+                        is LspServerState.Error -> "Status: Error (${state.message})"
+                        is LspServerState.Disabled -> "Status: Disabled (Lightweight Mode active)"
+                    }
+                    Text(text = statusDesc, style = MaterialTheme.typography.bodyMedium)
+
+                    Text(
+                        text = if (isLightweight) {
+                            "Lightweight mode is ON. LSP is disabled to save RAM on low-spec phones."
+                        } else {
+                            "Full IDE mode: provides real-time type checking, error underlines, hover docs, and code completions."
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        lspManager.restartServer()
+                        showLspOptionsDialog = false
+                    }
+                ) {
+                    Text("Restart Analyzer")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        lspManager.setLightweightMode(!isLightweight)
+                        showLspOptionsDialog = false
+                    }
+                ) {
+                    Text(if (isLightweight) "Enable Full LSP" else "Enable Lightweight Mode")
+                }
+            }
+        )
+    }
+
     Column(modifier = modifier.fillMaxSize().imePadding()) {
         // Tab Bar
         Surface(
@@ -232,6 +311,34 @@ fun TabbedEditorView(
                             }
                         }
                     }
+                }
+
+                Spacer(modifier = Modifier.width(4.dp))
+
+                // LSP Status Indicator Pill
+                val (lspStatusText, lspStatusColor) = when (val state = lspState) {
+                    is LspServerState.Ready -> "● LSP" to Color(0xFF69F0AE)
+                    is LspServerState.Indexing -> "⏳ Indexing" to Color(0xFFFFD740)
+                    is LspServerState.Starting -> "○ Starting" to Color(0xFF80D8FF)
+                    is LspServerState.Error -> "● Error" to Color(0xFFFF5252)
+                    is LspServerState.Disabled -> "○ Light" to Color(0xFF90A4AE)
+                }
+
+                Surface(
+                    color = Color(0xFF282932),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .clickable { showLspOptionsDialog = true }
+                        .padding(horizontal = 4.dp)
+                ) {
+                    Text(
+                        text = lspStatusText,
+                        color = lspStatusColor,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        fontFamily = FontFamily.Monospace,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
                 }
             }
         }
@@ -347,6 +454,22 @@ fun TabbedEditorView(
                         }
                         onFileSaved(tab.file)
                     } catch (e: Exception) {}
+                }
+            },
+            problemsCount = problems.size,
+            onShowProblems = { showProblemsSheet = true },
+            onFormatRequested = {
+                currentTab?.let { tab ->
+                    if (tab.file.extension == "dart") {
+                        lspManager.formatFile(tab.file) { success ->
+                            if (success) {
+                                try {
+                                    val formattedText = tab.file.readText()
+                                    editorController.activeEditor?.setText(formattedText)
+                                } catch (e: Exception) {}
+                            }
+                        }
+                    }
                 }
             }
         )
