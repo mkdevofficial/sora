@@ -213,8 +213,8 @@ fun SetupFlutterScreen(
                     val statusDetail = when (val state = flutterState) {
                         is FlutterState.NotInstalled ->
                             "Installs Flutter SDK (arm64), downloads Dart SDK, configures PATH, and enables web preview toolchain."
-                        is FlutterState.CheckingStorage ->
-                            "Checking available device storage: ${state.availableGb} GB..."
+                        is FlutterState.CheckingEnvironment ->
+                            state.message
                         is FlutterState.InstallingPackages ->
                             "Step 1/5: ${state.progressMessage}"
                         is FlutterState.Cloning ->
