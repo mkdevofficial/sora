@@ -154,7 +154,7 @@ class EnvironmentManager(
         storageLayout.tmpDir.mkdirs()
         try {
             Os.chmod(storageLayout.tmpDir.absolutePath, 493) // 0755
-        } catch (_: Exception) {}
+        } catch (_: Throwable) {}
 
         TarXzExtractor.extract(archiveFile, storageLayout.rootfsDir) { progress, name ->
             _state.value = EnvironmentState.Extracting(progress, name)
@@ -205,7 +205,7 @@ class EnvironmentManager(
                 }
                 setExecutablePermissions(targetFile)
                 log("    Staged: ${targetFile.name}")
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 // Check nativeLibraryDir fallback
                 val fallbackLib = File(context.applicationInfo.nativeLibraryDir, "lib${assetName.removeSuffix(".2")}")
                 if (fallbackLib.exists()) {
@@ -222,7 +222,7 @@ class EnvironmentManager(
             file.setReadable(true, false)
             file.setExecutable(true, false)
             Os.chmod(file.absolutePath, 493) // 0755
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             Log.w(TAG, "Failed setting 0755 on ${file.name}", e)
         }
     }

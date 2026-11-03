@@ -123,7 +123,7 @@ object TarXzExtractor {
         linkFile.parentFile?.mkdirs()
         try {
             Os.remove(linkFile.absolutePath)
-        } catch (_: Exception) {
+        } catch (_: Throwable) {
             if (linkFile.isDirectory) {
                 linkFile.deleteRecursively()
             } else {
@@ -132,7 +132,7 @@ object TarXzExtractor {
         }
         try {
             Os.symlink(targetPath, linkFile.absolutePath)
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             Log.w(TAG, "Failed to create symlink ${linkFile.absolutePath} -> $targetPath", e)
         }
     }
@@ -143,7 +143,7 @@ object TarXzExtractor {
         linkFile.parentFile?.mkdirs()
         try {
             Os.remove(linkFile.absolutePath)
-        } catch (_: Exception) {
+        } catch (_: Throwable) {
             if (linkFile.isDirectory) {
                 linkFile.deleteRecursively()
             } else {
@@ -152,10 +152,10 @@ object TarXzExtractor {
         }
         try {
             Os.link(srcFile.absolutePath, linkFile.absolutePath)
-        } catch (_: Exception) {
+        } catch (_: Throwable) {
             try {
                 srcFile.copyTo(linkFile, overwrite = true)
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 Log.w(TAG, "Failed to create hard link for ${linkFile.name}: ${e.message}")
             }
         }
@@ -170,7 +170,7 @@ object TarXzExtractor {
                 unixPerms = unixPerms or 0x1C0
             }
             Os.chmod(file.absolutePath, unixPerms)
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             Log.w(TAG, "Failed setting chmod on ${file.name}", e)
         }
     }

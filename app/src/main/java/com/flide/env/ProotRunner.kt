@@ -81,16 +81,15 @@ class ProotRunner(
         storageLayout.tmpDir.mkdirs()
         try {
             android.system.Os.chmod(storageLayout.tmpDir.absolutePath, 493) // 0755
-        } catch (_: Exception) {}
+        } catch (_: Throwable) {}
 
         env["PROOT_TMP_DIR"] = storageLayout.tmpDir.absolutePath
-        env["TMPDIR"] = storageLayout.tmpDir.absolutePath
-
         env["PATH"] = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
         env["HOME"] = "/home/flide"
         env["USER"] = "flide"
         env["TERM"] = "xterm-256color"
         env["LANG"] = "C.UTF-8"
+        env["TMPDIR"] = "/tmp"
 
         return env
     }

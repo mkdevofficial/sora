@@ -47,6 +47,7 @@ class ProotRunnerTest {
         assertTrue(cmd.contains("/dev"))
         assertTrue(cmd.contains("/proc"))
         assertTrue(cmd.contains("/sys"))
+        assertTrue(cmd.contains("${layout.tmpDir.absolutePath}:/tmp"))
         assertTrue(cmd.contains("${layout.projectsDir.absolutePath}:/home/flide/projects"))
         assertTrue(cmd.contains("-w"))
         assertTrue(cmd.contains("/home/flide"))
@@ -69,6 +70,7 @@ class ProotRunnerTest {
         assertEquals("xterm-256color", env["TERM"])
         assertEquals("C.UTF-8", env["LANG"])
         assertEquals("/tmp", env["TMPDIR"])
+        assertEquals(layout.tmpDir.absolutePath, env["PROOT_TMP_DIR"])
         assertTrue(env.containsKey("LD_LIBRARY_PATH"))
     }
 }
