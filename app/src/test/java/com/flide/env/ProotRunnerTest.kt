@@ -33,10 +33,10 @@ class ProotRunnerTest {
         prootBin.setExecutable(true)
 
         // Mock context without android runtime
-        val runner = object : ProotRunner(
+        val runner = ProotRunner(
             context = createDummyContext(),
             storageLayout = layout
-        ) {}
+        )
 
         val cmd = runner.buildProotCommand(
             command = listOf("/bin/bash", "-c", "echo hello"),
@@ -60,10 +60,10 @@ class ProotRunnerTest {
 
     @Test
     fun testProotEnvironmentVariables() {
-        val runner = object : ProotRunner(
+        val runner = ProotRunner(
             context = createDummyContext(),
             storageLayout = layout
-        ) {}
+        )
 
         val env = runner.getProotEnvironment()
 
