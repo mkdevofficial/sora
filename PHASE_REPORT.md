@@ -95,14 +95,55 @@ During on-device testing on Android arm64, the bootstrap pipeline successfully e
 
 ---
 
-## 4. Next Steps
-1. Push changes to GitHub repository `mkdevofficial/sora` (`main`). (Done: commit `93ff11f`).
-2. Build debug APK on GitHub Actions (or local CI).
-3. Install the updated APK on device.
-4. On the device, open "Set Up Environment", tap "Start Setup" (or "Reset Environment" followed by "Start Setup").
-5. Verify that:
-   - PRoot temporary directory warning is resolved.
-   - Smoke test passes: `Debian Userland Smoke Test OK` and `uname -a` output displayed.
-   - Status updates to `Ready` with "Open Debian Shell" button active.
-   - Launching terminal allows interactive command execution inside Debian.
-6. Await confirmation before starting **Phase 2 (Flutter SDK installation inside the environment)**.
+## 4. Phase 1 Verification Summary
+- **Storage & Engine:** Verified on-device (31.62 GB available, PRoot staged, Debian Bookworm arm64 extracted).
+- **PRoot Userland:** Smoke test passed (`Debian Userland Smoke Test OK` and `uname -a` output).
+- **Native Terminal:** Termux `TerminalView` + `TerminalSession` connected via Linux PTY with interactive login shell, soft keyboard focus, and extra keys row.
+
+---
+
+# Phase 2 Report — Flutter SDK Installation Inside the Environment
+
+## 1. What Was Done
+
+### 1.1 Flutter Environment & Path Configuration
+- Configured persistent `PATH` across all userland interfaces:
+  - Exported `PATH="/home/flide/flutter/bin:$PATH"` in `/etc/profile.d/flide_env.sh` and `/home/flide/.bashrc`.
+  - Set default `PATH` in `ProotRunner.kt` to include `/home/flide/flutter/bin`.
+  - Exported `FLUTTER_ROOT="/home/flide/flutter"` and `PUB_CACHE="/home/flide/.pub-cache"`.
+- Added `/etc/apt/apt.conf.d/99sandbox` with `APT::Sandbox::User "root";` to bypass sandboxed user restrictions in PRoot during package downloads.
+- Added `/.dockerenv` marker in rootfs to suppress container superuser execution warnings from Flutter.
+
+### 1.2 Flutter SDK Manager (`FlutterManager.kt`)
+- Full state machine (`NotInstalled`, `CheckingStorage`, `InstallingPackages`, `Cloning`, `Bootstrapping`, `Configuring`, `RunningDoctor`, `Ready`, `Error`).
+- Pipeline tasks implemented:
+  1. **Storage Check:** Verifies free device storage >= 1.5 GB.
+  2. **Debian Build Tools:** Executes `apt-get update` and installs `git`, `curl`, `unzip`, `xz-utils`, `zip`, `ca-certificates`, `libglu1-mesa`, `clang`, `cmake`, `ninja-build`, `pkg-config`.
+  3. **Git Configuration:** Sets `git config --global --add safe.directory "*"` to prevent ownership warnings.
+  4. **Shallow Clone:** Clones `https://github.com/flutter/flutter.git` (`-b stable`, `--depth 1`) into `/home/flide/flutter`.
+  5. **First-Run Bootstrap:** Runs `flutter --version`, automatically downloading the official linux-arm64 Dart SDK.
+  6. **Disable Analytics:** Executes `flutter config --no-analytics` and `dart --disable-analytics`.
+  7. **Web Toolchain Setup:** Executes `flutter config --enable-web` and `flutter precache --web` (skipping heavy Android/iOS SDK artifacts).
+  8. **Toolchain Verification:** Executes `flutter doctor -v` and stores the report.
+- Persistent logging: Streams real-time log output and writes to `logs/flutter_install.log`.
+
+### 1.3 Flutter Setup UI Screen (`SetupFlutterScreen.kt`)
+- Step-by-step progress display with determinate/indeterminate progress indicators.
+- Channel selection (`stable`, `beta`).
+- Live auto-scrolling terminal-style log output with syntax coloring for apt, git, flutter, and doctor.
+- "Copy Log" button to clipboard.
+- "Run Doctor" and "Open Terminal" buttons when Flutter is Ready.
+- Integrated into `HomeScreen.kt` with a dynamic Flutter SDK status card.
+
+### 1.4 Unit Testing
+- Added `FlutterManagerTest.kt`: Tests required packages list, environment configuration (`.dockerenv`, `99sandbox`, profile PATH), and storage layout paths.
+- Updated `ProotRunnerTest.kt`: Tests updated `PATH`, `FLUTTER_ROOT`, and `PUB_CACHE` variables.
+
+---
+
+## 2. Next Steps
+1. Build debug APK on GitHub Actions (`mkdevofficial/sora`, commit `8d7c6ea`).
+2. Install APK on real device.
+3. Open Flide, tap **Install Flutter SDK** on the Home screen.
+4. Verify Flutter setup completes, `flutter --version` outputs Flutter stable, and `flutter doctor` verifies web toolchain.
+5. In the terminal, verify `flutter --version` and `which flutter` resolve directly from the shell prompt.
