@@ -52,6 +52,8 @@ class ProotRunner(
         cmd.add("-b")
         cmd.add("/sys")
         cmd.add("-b")
+        cmd.add("${storageLayout.tmpDir.absolutePath}:/tmp")
+        cmd.add("-b")
         cmd.add("${storageLayout.projectsDir.absolutePath}:/home/flide/projects")
         cmd.add("-w")
         cmd.add(workingDir)
@@ -75,12 +77,20 @@ class ProotRunner(
             }
         }
 
+        // Set private writable tmp directory for PRoot internals and guest processes
+        storageLayout.tmpDir.mkdirs()
+        try {
+            android.system.Os.chmod(storageLayout.tmpDir.absolutePath, 493) // 0755
+        } catch (_: Exception) {}
+
+        env["PROOT_TMP_DIR"] = storageLayout.tmpDir.absolutePath
+        env["TMPDIR"] = storageLayout.tmpDir.absolutePath
+
         env["PATH"] = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
         env["HOME"] = "/home/flide"
         env["USER"] = "flide"
         env["TERM"] = "xterm-256color"
         env["LANG"] = "C.UTF-8"
-        env["TMPDIR"] = "/tmp"
 
         return env
     }

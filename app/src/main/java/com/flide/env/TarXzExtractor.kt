@@ -27,7 +27,6 @@ object TarXzExtractor {
             targetDir.mkdirs()
         }
 
-        val totalArchiveBytes = archiveFile.length()
         var extractedCount = 0
         var lastLogTime = System.currentTimeMillis()
 
@@ -40,7 +39,14 @@ object TarXzExtractor {
                         while (entry != null) {
                             coroutineContext.ensureActive()
 
-                            val destFile = File(targetDir, entry.name)
+                            val relativePath = stripLeadingComponent(entry.name)
+                            if (relativePath == null) {
+                                // Top-level container directory entry, skip
+                                entry = tarIn.nextTarEntry
+                                continue
+                            }
+
+                            val destFile = File(targetDir, relativePath)
 
                             // Security check: path traversal prevention
                             val canonicalDest = destFile.canonicalPath
@@ -58,6 +64,9 @@ object TarXzExtractor {
                                 entry.isSymbolicLink -> {
                                     createSymlink(destFile, entry.linkName)
                                 }
+                                entry.isLink -> {
+                                    createHardLink(targetDir, destFile, entry.linkName)
+                                }
                                 entry.isFile -> {
                                     destFile.parentFile?.mkdirs()
                                     FileOutputStream(destFile).use { out ->
@@ -74,7 +83,7 @@ object TarXzExtractor {
                             extractedCount++
                             val now = System.currentTimeMillis()
                             if (now - lastLogTime >= 250) {
-                                onProgress(0.5f, entry.name)
+                                onProgress(0.5f, relativePath)
                                 lastLogTime = now
                             }
 
@@ -87,10 +96,39 @@ object TarXzExtractor {
         onProgress(1.0f, "Completed")
     }
 
+    /**
+     * Strips top-level root folder prefix (e.g. 'debian-bookworm-aarch64/bin' -> 'bin')
+     * so that files extract directly into the target rootfs directory.
+     */
+    fun stripLeadingComponent(rawName: String): String? {
+        val clean = rawName.removePrefix("./").trimStart('/')
+        if (clean.isEmpty()) return null
+
+        val firstSlash = clean.indexOf('/')
+        return if (firstSlash == -1) {
+            // It's a top-level file or directory at the archive root
+            if (clean.startsWith("debian-")) null else clean
+        } else {
+            val topDir = clean.substring(0, firstSlash)
+            if (topDir.startsWith("debian-")) {
+                val sub = clean.substring(firstSlash + 1).trimStart('/')
+                sub.ifEmpty { null }
+            } else {
+                clean
+            }
+        }
+    }
+
     private fun createSymlink(linkFile: File, targetPath: String) {
         linkFile.parentFile?.mkdirs()
-        if (linkFile.exists() || isBrokenSymlink(linkFile)) {
-            linkFile.delete()
+        try {
+            Os.unlink(linkFile.absolutePath)
+        } catch (_: Exception) {
+            if (linkFile.isDirectory) {
+                linkFile.deleteRecursively()
+            } else {
+                linkFile.delete()
+            }
         }
         try {
             Os.symlink(targetPath, linkFile.absolutePath)
@@ -99,20 +137,38 @@ object TarXzExtractor {
         }
     }
 
-    private fun isBrokenSymlink(file: File): Boolean {
-        return try {
-            Os.lstat(file.absolutePath)
-            true
-        } catch (e: Exception) {
-            false
+    private fun createHardLink(targetDir: File, linkFile: File, linkName: String) {
+        val srcRelative = stripLeadingComponent(linkName) ?: linkName
+        val srcFile = File(targetDir, srcRelative)
+        linkFile.parentFile?.mkdirs()
+        try {
+            Os.unlink(linkFile.absolutePath)
+        } catch (_: Exception) {
+            if (linkFile.isDirectory) {
+                linkFile.deleteRecursively()
+            } else {
+                linkFile.delete()
+            }
+        }
+        try {
+            Os.link(srcFile.absolutePath, linkFile.absolutePath)
+        } catch (_: Exception) {
+            try {
+                srcFile.copyTo(linkFile, overwrite = true)
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to create hard link for ${linkFile.name}: ${e.message}")
+            }
         }
     }
 
     private fun applyPermissions(file: File, mode: Int) {
         if (mode <= 0) return
         try {
-            // Apply lowest 9 bits (Unix rwxrwxrwx permissions)
-            val unixPerms = mode and 0x1FF
+            var unixPerms = mode and 0x1FF
+            if (file.isDirectory) {
+                // Ensure owner read/write/execute (0700) so contents can be extracted
+                unixPerms = unixPerms or 0x1C0
+            }
             Os.chmod(file.absolutePath, unixPerms)
         } catch (e: Exception) {
             Log.w(TAG, "Failed setting chmod on ${file.name}", e)

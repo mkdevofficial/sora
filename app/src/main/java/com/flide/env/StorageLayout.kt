@@ -18,6 +18,7 @@ class StorageLayout(val baseDir: File) {
     val projectsDir: File = File(baseDir, "projects")
     val logsDir: File = File(baseDir, "logs")
     val binDir: File = File(baseDir, "bin")
+    val tmpDir: File = File(baseDir, "tmp")
 
     val prootBin: File
         get() = File(binDir, "proot")
@@ -64,7 +65,8 @@ class StorageLayout(val baseDir: File) {
                 (projectsDir.exists() || projectsDir.mkdirs()) &&
                 (logsDir.exists() || logsDir.mkdirs()) &&
                 (binDir.exists() || binDir.mkdirs()) &&
-                (libDir.exists() || libDir.mkdirs())
+                (libDir.exists() || libDir.mkdirs()) &&
+                (tmpDir.exists() || tmpDir.mkdirs())
     }
 
     /**

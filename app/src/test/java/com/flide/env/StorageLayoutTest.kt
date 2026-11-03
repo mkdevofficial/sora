@@ -32,6 +32,7 @@ class StorageLayoutTest {
         assertEquals(File(baseDir, "bin/lib").absolutePath, layout.libDir.absolutePath)
         assertEquals(File(baseDir, "bin/proot").absolutePath, layout.prootBin.absolutePath)
         assertEquals(File(baseDir, "bin/loader").absolutePath, layout.loaderBin.absolutePath)
+        assertEquals(File(baseDir, "tmp").absolutePath, layout.tmpDir.absolutePath)
     }
 
     @Test
@@ -44,6 +45,7 @@ class StorageLayoutTest {
         assertTrue(layout.logsDir.exists() && layout.logsDir.isDirectory)
         assertTrue(layout.binDir.exists() && layout.binDir.isDirectory)
         assertTrue(layout.libDir.exists() && layout.libDir.isDirectory)
+        assertTrue(layout.tmpDir.exists() && layout.tmpDir.isDirectory)
     }
 
     @Test

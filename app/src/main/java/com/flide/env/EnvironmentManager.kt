@@ -44,7 +44,8 @@ class EnvironmentManager(
 
     private fun checkInitialStatus() {
         val rootfsExists = storageLayout.rootfsDir.exists() &&
-                File(storageLayout.rootfsDir, "bin/sh").exists()
+                (File(storageLayout.rootfsDir, "bin/sh").exists() ||
+                 File(storageLayout.rootfsDir, "usr/bin/sh").exists())
         _state.value = EnvironmentState.Idle(isInstalled = rootfsExists)
     }
 
@@ -144,6 +145,17 @@ class EnvironmentManager(
         // 5. Extract Rootfs
         _state.value = EnvironmentState.Extracting(0f, "Extracting packages...")
         log("[5/6] Extracting root filesystem to: ${storageLayout.rootfsDir.absolutePath}...")
+        
+        // Clean any stale or nested extraction from prior attempts
+        if (storageLayout.rootfsDir.exists()) {
+            storageLayout.rootfsDir.deleteRecursively()
+        }
+        storageLayout.rootfsDir.mkdirs()
+        storageLayout.tmpDir.mkdirs()
+        try {
+            Os.chmod(storageLayout.tmpDir.absolutePath, 493) // 0755
+        } catch (_: Exception) {}
+
         TarXzExtractor.extract(archiveFile, storageLayout.rootfsDir) { progress, name ->
             _state.value = EnvironmentState.Extracting(progress, name)
         }
