@@ -47,9 +47,17 @@
 - **Copy Log** button with instant clipboard copy.
 - Controls: "Start Setup", "Cancel", "Reset Environment", and "Open Debian Shell".
 
-### 1.6 Interactive Terminal Screen (`TerminalScreen.kt`)
-- Built-in terminal attached to the Debian shell inside the rootfs.
-- Quick test chips: `uname -a`, `cat /etc/os-release`, `apt-get --version`, `git --version`, `curl`.
+### 1.6 Integrated Native Termux Terminal (`com.flide.terminal` & `TerminalScreen.kt`)
+- Integrated native `com.github.termux.termux-app:terminal-view:0.118.2` and `terminal-emulator:0.118.2` (licenses: GPLv3 / Apache 2.0).
+- Uses real Linux pseudoterminal (PTY) via `libtermux.so` to spawn interactive login shell `/bin/bash -l` inside Debian under PRoot.
+- Full VT100 / xterm-256color terminal emulator support (ANSI colors, cursor repositioning, interactive CLI tools like `top`, `nano`, `apt`, `git`).
+- Soft keyboard integration with tap-to-focus and text selection.
+- Termux-style **Extra Keys Toolbar** docked above the keyboard:
+  - `ESC`, `TAB`, `CTRL`, `ALT`
+  - Quick symbols: `-`, `/`, `|`, `~`
+  - Cursor directional keys: `▲`, `▼`, `◀`, `▶`
+- Top bar actions: Session restart, clipboard paste, back navigation.
+- Quick command chips for instant environment validation.
 
 ---
 

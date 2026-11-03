@@ -21,6 +21,9 @@ class FlideApplication : Application() {
     lateinit var environmentManager: EnvironmentManager
         private set
 
+    lateinit var terminalManager: com.flide.terminal.FlideTerminalManager
+        private set
+
     override fun onCreate() {
         super.onCreate()
         instance = this
@@ -34,6 +37,10 @@ class FlideApplication : Application() {
             storageLayout = storageLayout,
             settingsRepository = settingsRepository,
             coroutineScope = appScope
+        )
+        terminalManager = com.flide.terminal.FlideTerminalManager(
+            storageLayout = storageLayout,
+            prootRunner = environmentManager.prootRunner
         )
     }
 

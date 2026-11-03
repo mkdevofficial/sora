@@ -58,6 +58,7 @@ The application maintains a strictly defined directory hierarchy under `Context.
 | `downloads/` | `<filesDir>/downloads/` | Download cache for Debian rootfs archives, proot binaries, and Flutter archives. |
 | `projects/` | `<filesDir>/projects/` | Flutter project directories. Directly mapped/mirrored to `/home/flide/projects` inside the rootfs. |
 | `logs/` | `<filesDir>/logs/` | Persistent operation logs, Flutter run logs, and diagnostic files. |
+| `tmp/` | `<filesDir>/tmp/` | Private writable temporary directory for PRoot internals (`PROOT_TMP_DIR`) and guest `/tmp` mount. |
 
 Both the Android editor and Flutter inside PRoot access the same project files on disk without network file sharing overhead.
 

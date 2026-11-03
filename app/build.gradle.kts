@@ -76,6 +76,9 @@ dependencies {
     implementation("org.apache.commons:commons-compress:1.26.2")
     implementation("org.tukaani:xz:1.9")
 
+    // Termux Terminal View & Emulator (Native PTY terminal)
+    implementation("com.github.termux.termux-app:terminal-view:0.118.2")
+
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 
