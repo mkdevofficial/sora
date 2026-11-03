@@ -317,11 +317,50 @@ During on-device testing on Android arm64, the bootstrap pipeline successfully e
 
 ---
 
+# Phase 6 Report — Integrated Terminal & Git Integration
+
+## 1. What Was Done
+
+### 1.1 Multi-Tab Integrated Terminal (`TerminalScreen.kt` & `TerminalTabItem`)
+- Multi-session terminal architecture inside the Debian arm64 rootfs:
+  - Dynamic scrollable tab bar supporting multiple independent bash sessions concurrently.
+  - Tab management: Create new tabs (`+`), switch active tab with instant session attachment, and close tab (`X`).
+  - Processes and command states persist across tab switching.
+  - Extra Keys Toolbar docked above software keyboard: `ESC`, `TAB`, `CTRL`, `ALT`, `-`, `/`, `|`, `~`, `▲`, `▼`, `◀`, `▶`.
+  - One-tap clipboard paste into active terminal session.
+  - Fast environment validation command chips (`uname -a`, `apt update`, `git status`, `clear`).
+
+### 1.2 Real Git Integration (`GitManager.kt` & `GitModels.kt`)
+- Backed by real `git` binary inside Debian userland under PRoot:
+  - Repository initialization (`git init`) and user configuration setup.
+  - Robust porcelain status parser (`git status --porcelain=v1 -b`): identifies staged files, working tree changes, and untracked files.
+  - Colorized diff inspection (`git diff` and `git diff --cached`).
+  - Staging control: `stageAll()`, `stageFiles()`, and `unstageFiles()`.
+  - Commits: `commit(message)` with automated user config fallback.
+  - Branching: list branches (`git branch --list`) and branch checkout/creation (`git checkout -b <name>`).
+  - Commit History: `getLog()` returning hash, short hash, author, subject, and date.
+
+### 1.3 Interactive Git UI Sheet (`GitBottomSheet.kt`)
+- Integrated into `IdeScreen.kt` top action bar via the Git branch icon (`Icons.Default.CallSplit`):
+  - **Branch Pill & Switcher**: Displays current branch; tap to switch branches or create a new branch.
+  - **Stage All & Refresh**: Quick staging of all project changes.
+  - **Commit Box**: Commit message entry and one-tap commit execution.
+  - **File Changes List**:
+    - Staged changes section (green badges `M`, `A`, `D`, `R`) with unstage buttons.
+    - Working tree changes section (yellow badges) with stage buttons.
+    - Untracked files section (blue badges).
+    - Tapping any modified file opens a built-in **Diff Viewer** modal with syntax highlighting (`+` green, `-` red, `@@` blue).
+  - **Recent Commits History**: Shows recent commits with short hash and commit metadata.
+
+### 1.4 Unit Testing
+- Added `GitManagerTest.kt`: Tests status output parsing for clean repositories, fresh repositories with no commits, and complex status outputs containing staged, unstaged, and untracked files.
+
+---
+
 ## 2. Next Steps
 1. Build debug APK on GitHub Actions (`mkdevofficial/sora`).
 2. Install APK on real device.
-3. Open a Flutter project in Flide:
-   - Verify the `● LSP` pill transitions from `Starting` -> `Indexing` -> `Ready`.
-   - Introduce a syntax or type error in `lib/main.dart` and verify squiggly underlines appear and the problem shows in the Problems panel.
-   - Tap the format button (`🪄`) to auto-format the file with `dart format`.
-   - Test completion popup when typing widget names.
+3. In Flide:
+   - Open Terminal tab and verify multi-tab creation and switching works smoothly.
+   - Run `git status`, `flutter pub add`, or other CLI commands in the terminal.
+   - Open Git sheet in the IDE, inspect diffs, stage files, and make a commit.

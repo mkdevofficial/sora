@@ -125,6 +125,19 @@ class ProotRunner(
         }
     }
 
+    suspend fun executeCapture(
+        command: List<String>,
+        workingDir: String = "/home/flide",
+        asRoot: Boolean = false
+    ): Pair<Int, String> = withContext(Dispatchers.IO) {
+        val output = StringBuilder()
+        val code = execute(command, workingDir, asRoot) { line ->
+            if (output.isNotEmpty()) output.append("\n")
+            output.append(line)
+        }
+        Pair(code, output.toString())
+    }
+
     fun startInteractiveShell(
         shell: String = "/bin/bash",
         workingDir: String = "/home/flide",

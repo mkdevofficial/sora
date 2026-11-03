@@ -36,6 +36,9 @@ class FlideApplication : Application() {
     lateinit var dartLspManager: com.flide.editor.lsp.DartLspManager
         private set
 
+    lateinit var gitManager: com.flide.git.GitManager
+        private set
+
     override fun onCreate() {
         super.onCreate()
         instance = this
@@ -75,6 +78,9 @@ class FlideApplication : Application() {
         dartLspManager = com.flide.editor.lsp.DartLspManager(
             prootRunner = environmentManager.prootRunner,
             coroutineScope = appScope
+        )
+        gitManager = com.flide.git.GitManager(
+            prootRunner = environmentManager.prootRunner
         )
     }
 

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.CallSplit
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.RestartAlt
@@ -35,6 +36,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -49,6 +51,7 @@ import com.flide.flutter.run.FlutterRunState
 import com.flide.project.FlutterProject
 import com.flide.ui.console.RunConsoleView
 import com.flide.ui.editor.TabbedEditorView
+import com.flide.ui.git.GitBottomSheet
 import com.flide.ui.preview.WebPreviewView
 import com.flide.ui.terminal.TerminalScreen
 
@@ -73,7 +76,16 @@ fun IdeScreen(
     val logs by runController.logs.collectAsState()
 
     var selectedTabIndex by remember { mutableIntStateOf(IdeTab.PREVIEW.ordinal) }
+    var showGitSheet by remember { mutableStateOf(false) }
     val isRunning = runController.isRunning
+
+    if (showGitSheet) {
+        GitBottomSheet(
+            project = project,
+            onDismiss = { showGitSheet = false },
+            onFilesChanged = {}
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -138,6 +150,15 @@ fun IdeScreen(
                             imageVector = Icons.Default.RestartAlt,
                             contentDescription = "Hot Restart",
                             tint = if (runState is FlutterRunState.Running) Color(0xFF80D8FF) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                        )
+                    }
+
+                    // Git Action
+                    IconButton(onClick = { showGitSheet = true }) {
+                        Icon(
+                            imageVector = Icons.Default.CallSplit,
+                            contentDescription = "Git Version Control",
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
 

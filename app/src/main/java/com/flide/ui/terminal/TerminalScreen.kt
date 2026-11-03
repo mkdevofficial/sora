@@ -19,6 +19,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
@@ -31,12 +33,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.SuggestionChipDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -55,6 +60,14 @@ import com.flide.terminal.FlideTerminalClient
 import com.flide.terminal.writeString
 import com.termux.terminal.TerminalSession
 import com.termux.view.TerminalView
+import java.util.UUID
+
+data class TerminalTabItem(
+    val id: String,
+    val session: TerminalSession,
+    val client: FlideTerminalClient,
+    var title: String = "bash"
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,73 +81,106 @@ fun TerminalScreen(
     val app = FlideApplication.instance
     val terminalManager = app.terminalManager
 
-    var terminalTitle by remember { mutableStateOf("Debian Bash") }
     var isCtrlActive by remember { mutableStateOf(false) }
     var isAltActive by remember { mutableStateOf(false) }
-    var isSessionRunning by remember { mutableStateOf(true) }
 
     val density = LocalDensity.current.density
     val textSizePx = remember(density) { (13.5f * density).toInt() }
 
     var terminalViewRef by remember { mutableStateOf<TerminalView?>(null) }
-    var terminalSessionRef by remember { mutableStateOf<TerminalSession?>(null) }
+    val tabs = remember { mutableStateListOf<TerminalTabItem>() }
+    var activeTabIndex by remember { mutableIntStateOf(0) }
 
-    val terminalClient = remember {
-        FlideTerminalClient(
+    fun createTab(view: TerminalView?, command: String? = null) {
+        val tabId = UUID.randomUUID().toString()
+        val tabIndex = tabs.size + 1
+        var client: FlideTerminalClient? = null
+        client = FlideTerminalClient(
             context = context,
             onTitleChange = { newTitle ->
-                terminalTitle = newTitle.ifBlank { "Debian Shell" }
+                val targetTab = tabs.find { it.id == tabId }
+                if (targetTab != null) {
+                    targetTab.title = newTitle.ifBlank { "bash $tabIndex" }
+                }
             },
-            onSessionFinish = {
-                isSessionRunning = false
-            }
+            onSessionFinish = {}
         )
-    }
+        client.isCtrlActive = isCtrlActive
+        client.isAltActive = isAltActive
+        client.currentTextSize = textSizePx
+        client.terminalView = view
 
-    // Keep active modifiers synced with client
-    terminalClient.isCtrlActive = isCtrlActive
-    terminalClient.isAltActive = isAltActive
-    terminalClient.currentTextSize = textSizePx
-
-    fun startNewSession(view: TerminalView?) {
-        terminalSessionRef?.finishIfRunning()
         val session = terminalManager.createSession(
-            client = terminalClient,
+            client = client,
             workingDir = initialWorkingDir,
             asRoot = true
         )
-        terminalSessionRef = session
-        isSessionRunning = true
+        val tab = TerminalTabItem(id = tabId, session = session, client = client, title = "bash $tabIndex")
+        tabs.add(tab)
+        activeTabIndex = tabs.size - 1
+
         view?.let {
+            it.setTerminalViewClient(client)
             it.attachSession(session)
             it.updateSize()
             it.requestFocus()
         }
-        if (!initialCommand.isNullOrBlank()) {
-            session.writeString("$initialCommand\n")
+
+        if (!command.isNullOrBlank()) {
+            session.writeString("$command\n")
+        }
+    }
+
+    fun switchTab(index: Int, view: TerminalView?) {
+        if (index in tabs.indices) {
+            activeTabIndex = index
+            val tab = tabs[index]
+            tab.client.isCtrlActive = isCtrlActive
+            tab.client.isAltActive = isAltActive
+            tab.client.currentTextSize = textSizePx
+            view?.let {
+                it.setTerminalViewClient(tab.client)
+                it.attachSession(tab.session)
+                it.updateSize()
+                it.requestFocus()
+            }
+        }
+    }
+
+    fun closeTab(index: Int, view: TerminalView?) {
+        if (index in tabs.indices) {
+            val tab = tabs.removeAt(index)
+            tab.session.finishIfRunning()
+            if (tabs.isEmpty()) {
+                createTab(view)
+            } else {
+                val newIndex = index.coerceAtMost(tabs.size - 1)
+                switchTab(newIndex, view)
+            }
         }
     }
 
     DisposableEffect(Unit) {
         onDispose {
-            terminalSessionRef?.finishIfRunning()
+            tabs.forEach { it.session.finishIfRunning() }
         }
     }
 
     Scaffold(
         topBar = {
+            val activeTab = tabs.getOrNull(activeTabIndex)
             TopAppBar(
                 title = {
                     Column {
                         Text(
-                            text = terminalTitle,
+                            text = activeTab?.title ?: "Terminal",
                             style = MaterialTheme.typography.titleMedium,
                             maxLines = 1
                         )
                         Text(
-                            text = if (isSessionRunning) "ARM64 Debian Userland" else "Session Finished",
+                            text = "Debian arm64 Userland (${tabs.size} tabs)",
                             style = MaterialTheme.typography.bodySmall,
-                            color = if (isSessionRunning) Color(0xFF81C784) else Color(0xFFE57373)
+                            color = Color(0xFF81C784)
                         )
                     }
                 },
@@ -149,15 +195,19 @@ fun TerminalScreen(
                 actions = {
                     // Paste from clipboard
                     IconButton(onClick = {
-                        terminalSessionRef?.let { terminalClient.onPasteTextFromClipboard(it) }
+                        activeTab?.let { it.client.onPasteTextFromClipboard(it.session) }
                     }) {
                         Icon(
                             imageVector = Icons.Default.ContentPaste,
                             contentDescription = "Paste"
                         )
                     }
-                    // Restart session
-                    IconButton(onClick = { startNewSession(terminalViewRef) }) {
+                    // Restart active tab session
+                    IconButton(onClick = {
+                        activeTab?.session?.finishIfRunning()
+                        closeTab(activeTabIndex, terminalViewRef)
+                        createTab(terminalViewRef)
+                    }) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
                             contentDescription = "Restart Terminal"
@@ -178,6 +228,61 @@ fun TerminalScreen(
                 .background(Color(0xFF000000))
                 .imePadding()
         ) {
+            // Multi-Tab Bar Strip
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFF1E1E24))
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 6.dp, vertical = 3.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                tabs.forEachIndexed { index, tab ->
+                    val isActive = index == activeTabIndex
+                    val tabBg = if (isActive) Color(0xFF2E2E3A) else Color(0xFF141418)
+
+                    Row(
+                        modifier = Modifier
+                            .background(tabBg, RoundedCornerShape(4.dp))
+                            .clickable { switchTab(index, terminalViewRef) }
+                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = tab.title,
+                            color = if (isActive) Color.White else Color(0xFF9E9E9E),
+                            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 12.sp
+                        )
+                        if (tabs.size > 1) {
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Close Tab",
+                                tint = Color(0xFF9E9E9E),
+                                modifier = Modifier
+                                    .size(14.dp)
+                                    .clickable { closeTab(index, terminalViewRef) }
+                            )
+                        }
+                    }
+                }
+
+                // Add Tab Button (+)
+                IconButton(
+                    onClick = { createTab(terminalViewRef) },
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "New Terminal Tab",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
             // Quick Commands Row
             Row(
                 modifier = Modifier
@@ -198,9 +303,10 @@ fun TerminalScreen(
                 for (chip in quickChips) {
                     SuggestionChip(
                         onClick = {
-                            terminalSessionRef?.let { session ->
-                                if (session.isRunning) {
-                                    session.writeString("$chip\n")
+                            val activeTab = tabs.getOrNull(activeTabIndex)
+                            activeTab?.let { tab ->
+                                if (tab.session.isRunning) {
+                                    tab.session.writeString("$chip\n")
                                 }
                             }
                         },
@@ -237,11 +343,13 @@ fun TerminalScreen(
                             )
                             setTextSize(textSizePx)
                             setTypeface(Typeface.MONOSPACE)
-                            setTerminalViewClient(terminalClient)
-                            terminalClient.terminalView = this
                             terminalViewRef = this
 
-                            startNewSession(this)
+                            if (tabs.isEmpty()) {
+                                createTab(this, initialCommand)
+                            } else {
+                                switchTab(activeTabIndex, this)
+                            }
 
                             isFocusable = true
                             isFocusableInTouchMode = true
@@ -250,57 +358,33 @@ fun TerminalScreen(
                     },
                     update = { view ->
                         terminalViewRef = view
-                        terminalClient.terminalView = view
-                        val session = terminalSessionRef
-                        if (session != null && view.currentSession != session) {
-                            view.attachSession(session)
+                        val activeTab = tabs.getOrNull(activeTabIndex)
+                        if (activeTab != null && view.currentSession != activeTab.session) {
+                            view.setTerminalViewClient(activeTab.client)
+                            view.attachSession(activeTab.session)
                             view.updateSize()
                         }
                     }
                 )
-
-                // Restart banner if session exited
-                if (!isSessionRunning) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .align(Alignment.BottomCenter)
-                            .background(Color(0xDD212121))
-                            .padding(12.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Process exited. Restart session?",
-                                color = Color.White,
-                                fontSize = 13.sp
-                            )
-                            Button(
-                                onClick = { startNewSession(terminalViewRef) },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.primary
-                                )
-                            ) {
-                                Text("Restart")
-                            }
-                        }
-                    }
-                }
             }
 
             // Termux-Style Extra Keys Row (above software keyboard)
             ExtraKeysToolbar(
                 isCtrlActive = isCtrlActive,
-                onToggleCtrl = { isCtrlActive = !isCtrlActive },
+                onToggleCtrl = {
+                    isCtrlActive = !isCtrlActive
+                    tabs.forEach { it.client.isCtrlActive = isCtrlActive }
+                },
                 isAltActive = isAltActive,
-                onToggleAlt = { isAltActive = !isAltActive },
+                onToggleAlt = {
+                    isAltActive = !isAltActive
+                    tabs.forEach { it.client.isAltActive = isAltActive }
+                },
                 onSendKey = { keySequence ->
-                    terminalSessionRef?.let { session ->
-                        if (session.isRunning) {
-                            session.writeString(keySequence)
+                    val activeTab = tabs.getOrNull(activeTabIndex)
+                    activeTab?.let { tab ->
+                        if (tab.session.isRunning) {
+                            tab.session.writeString(keySequence)
                         }
                     }
                 }
