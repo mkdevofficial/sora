@@ -84,12 +84,14 @@ class ProotRunner(
         } catch (_: Throwable) {}
 
         env["PROOT_TMP_DIR"] = storageLayout.tmpDir.absolutePath
-        env["PATH"] = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+        env["PATH"] = "/home/flide/flutter/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
         env["HOME"] = "/home/flide"
         env["USER"] = "flide"
         env["TERM"] = "xterm-256color"
         env["LANG"] = "C.UTF-8"
         env["TMPDIR"] = "/tmp"
+        env["FLUTTER_ROOT"] = "/home/flide/flutter"
+        env["PUB_CACHE"] = "/home/flide/.pub-cache"
 
         return env
     }

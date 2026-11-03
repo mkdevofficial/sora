@@ -64,7 +64,9 @@ class ProotRunnerTest {
 
         val env = runner.getProotEnvironment()
 
-        assertEquals("/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", env["PATH"])
+        assertEquals("/home/flide/flutter/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", env["PATH"])
+        assertEquals("/home/flide/flutter", env["FLUTTER_ROOT"])
+        assertEquals("/home/flide/.pub-cache", env["PUB_CACHE"])
         assertEquals("/home/flide", env["HOME"])
         assertEquals("flide", env["USER"])
         assertEquals("xterm-256color", env["TERM"])

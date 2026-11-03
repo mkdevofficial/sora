@@ -330,10 +330,41 @@ class EnvironmentManager(
         hostsFile.writeText(EnvironmentConfig.DEFAULT_HOSTS_CONTENT)
         log("    Configured /etc/hosts")
 
-        // 3. Ensure user home and projects directories
+        // 3. Configure APT Sandbox for PRoot
+        val aptConfDir = File(etcDir, "apt/apt.conf.d")
+        aptConfDir.mkdirs()
+        File(aptConfDir, "99sandbox").writeText("APT::Sandbox::User \"root\";\n")
+
+        // 4. Ensure user home and projects directories
         storageLayout.rootfsHomeDir.mkdirs()
         storageLayout.rootfsProjectsDir.mkdirs()
         log("    Prepared /home/flide/projects directory")
+
+        // 5. Configure PATH with Flutter SDK in /etc/profile.d and ~/.bashrc
+        val profileD = File(etcDir, "profile.d")
+        profileD.mkdirs()
+        File(profileD, "flide_env.sh").writeText(
+            """
+            export PATH="/home/flide/flutter/bin:${'$'}PATH"
+            export FLUTTER_ROOT="/home/flide/flutter"
+            export PUB_CACHE="/home/flide/.pub-cache"
+            """.trimIndent() + "\n"
+        )
+
+        val bashrc = File(storageLayout.rootfsHomeDir, ".bashrc")
+        val bashrcContent = if (bashrc.exists()) bashrc.readText() else ""
+        if (!bashrcContent.contains("/home/flide/flutter/bin")) {
+            bashrc.appendText(
+                """
+
+                # Flide Flutter environment
+                export PATH="/home/flide/flutter/bin:${'$'}PATH"
+                export FLUTTER_ROOT="/home/flide/flutter"
+                export PUB_CACHE="/home/flide/.pub-cache"
+                """.trimIndent() + "\n"
+            )
+        }
+        log("    Configured persistent Flutter PATH in /etc/profile.d and ~/.bashrc")
     }
 
     companion object {

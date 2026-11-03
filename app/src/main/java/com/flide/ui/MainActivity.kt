@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import com.flide.FlideApplication
 import com.flide.data.settings.IdeSettings
 import com.flide.ui.env.SetupEnvironmentScreen
+import com.flide.ui.flutter.SetupFlutterScreen
 import com.flide.ui.home.HomeScreen
 import com.flide.ui.terminal.TerminalScreen
 import com.flide.ui.theme.FlideTheme
@@ -24,7 +25,8 @@ import com.flide.ui.theme.FlideTheme
 enum class Screen {
     Home,
     SetupEnvironment,
-    Terminal
+    Terminal,
+    SetupFlutter
 }
 
 class MainActivity : ComponentActivity() {
@@ -46,7 +48,8 @@ class MainActivity : ComponentActivity() {
                         Screen.Home -> {
                             HomeScreen(
                                 onNavigateToSetup = { currentScreen = Screen.SetupEnvironment },
-                                onNavigateToTerminal = { currentScreen = Screen.Terminal }
+                                onNavigateToTerminal = { currentScreen = Screen.Terminal },
+                                onNavigateToFlutterSetup = { currentScreen = Screen.SetupFlutter }
                             )
                         }
                         Screen.SetupEnvironment -> {
@@ -64,6 +67,15 @@ class MainActivity : ComponentActivity() {
                             }
                             TerminalScreen(
                                 onNavigateBack = { currentScreen = Screen.Home }
+                            )
+                        }
+                        Screen.SetupFlutter -> {
+                            BackHandler {
+                                currentScreen = Screen.Home
+                            }
+                            SetupFlutterScreen(
+                                onNavigateBack = { currentScreen = Screen.Home },
+                                onNavigateToTerminal = { currentScreen = Screen.Terminal }
                             )
                         }
                     }

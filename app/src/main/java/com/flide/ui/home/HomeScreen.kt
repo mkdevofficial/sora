@@ -43,10 +43,12 @@ import java.util.Locale
 fun HomeScreen(
     onNavigateToSetup: () -> Unit,
     onNavigateToTerminal: () -> Unit,
+    onNavigateToFlutterSetup: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val app = FlideApplication.instance
     val settings by app.settingsRepository.settingsFlow.collectAsState(initial = IdeSettings())
+    val flutterState by app.flutterManager.state.collectAsState()
 
     val storageLayout = app.storageLayout
     val freeSpaceGb = storageLayout.getAvailableStorageBytes() / (1024f * 1024f * 1024f)
@@ -126,6 +128,61 @@ fun HomeScreen(
                             Button(onClick = onNavigateToSetup) {
                                 Text(text = "Set Up Environment")
                             }
+                        }
+                    }
+                }
+            }
+
+            // Flutter SDK Card (Phase 2)
+            if (settings.environmentConfigured) {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (flutterState is com.flide.flutter.FlutterState.Ready) {
+                            Color(0xFF1B3B22)
+                        } else {
+                            MaterialTheme.colorScheme.surfaceVariant
+                        }
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = null,
+                                tint = if (flutterState is com.flide.flutter.FlutterState.Ready) Color(0xFF81C784) else MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.size(8.dp))
+                            Text(
+                                text = "Flutter SDK (Phase 2)",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (flutterState is com.flide.flutter.FlutterState.Ready) Color(0xFF81C784) else Color.Unspecified
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = when (val state = flutterState) {
+                                is com.flide.flutter.FlutterState.Ready ->
+                                    "Status: Flutter ${state.version} (${state.channel}) ready in rootfs"
+                                is com.flide.flutter.FlutterState.NotInstalled ->
+                                    "Status: Not installed. Ready to install Flutter SDK."
+                                is com.flide.flutter.FlutterState.Error ->
+                                    "Status: Setup error: ${state.message}"
+                                else ->
+                                    "Status: Installing / configuring Flutter SDK..."
+                            },
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Button(onClick = onNavigateToFlutterSetup) {
+                            Text(
+                                text = if (flutterState is com.flide.flutter.FlutterState.Ready) {
+                                    "Flutter Details & Doctor"
+                                } else {
+                                    "Install Flutter SDK"
+                                }
+                            )
                         }
                     }
                 }

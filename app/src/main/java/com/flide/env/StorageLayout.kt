@@ -45,6 +45,15 @@ class StorageLayout(val baseDir: File) {
         get() = File(rootfsHomeDir, "projects")
 
     /**
+     * Flutter SDK directory path inside rootfs (/home/flide/flutter).
+     */
+    val rootfsFlutterDir: File
+        get() = File(rootfsHomeDir, "flutter")
+
+    val rootfsFlutterBin: File
+        get() = File(rootfsFlutterDir, "bin/flutter")
+
+    /**
      * Flutter SDK installation directory inside rootfs.
      */
     val rootfsFlutterDir: File
