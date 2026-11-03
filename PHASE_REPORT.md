@@ -62,14 +62,39 @@
 
 ---
 
-## 3. Known Issues / Considerations
-- Extraction of 42.9 MB compressed tarball takes ~15–30 seconds depending on device flash memory speed.
-- Android battery optimization / Phantom Process Killer warning should be checked in settings on Android 12+ if running heavy apt updates in the background.
+## 3. Real Device Testing Feedback & Fixes Applied
+
+During on-device testing on Android arm64, the bootstrap pipeline successfully executed Steps 1 through 5 (31.62 GB free storage verified, PRoot binaries staged, archive downloaded with 100% SHA-256 match, and extracted). In Step 6, the smoke test uncovered two issues:
+
+### Issue 1: PRoot Default Temp Directory Permission Denied
+- **Symptom:**
+  ```
+  [proot] proot warning: can't canonicalize /data/data/com.termux/files/usr/tmp/: Permission denied
+  [proot] proot error: can't create temporary directory: Permission denied
+  [proot] proot info: Please set PROOT_TMP_DIR env. variable to an alternate location (with write permission).
+  ```
+- **Cause:** Upstream Termux PRoot binaries default to `/data/data/com.termux/files/usr/tmp/`. Flide runs under its own package ID (`com.flide.debug`), where accessing Termux's data directory is prohibited by Android sandbox permissions.
+- **Fix:** Added `tmpDir` (`files/tmp`) in `StorageLayout.kt`, ensure `chmod 0755` permissions, bind `-b ${storageLayout.tmpDir.absolutePath}:/tmp`, and explicitly pass `PROOT_TMP_DIR` and `TMPDIR` pointing to this private directory in `ProotRunner.kt`.
+
+### Issue 2: Rootfs Container Directory Prefix (`/bin/sh` not found)
+- **Symptom:**
+  ```
+  [proot] proot error: '/bin/sh' not found (root = /data/user/0/com.flide.debug/files/rootfs, cwd = /home/flide)
+  ```
+- **Cause:** The official `debian-bookworm-aarch64-pd-v4.17.3.tar.xz` archive packages all files under a top-level directory `debian-bookworm-aarch64/` (e.g. `debian-bookworm-aarch64/bin -> usr/bin`). Without stripping this prefix, files were extracted to `rootfs/debian-bookworm-aarch64/` instead of `rootfs/`.
+- **Fix:** Implemented `stripLeadingComponent(entryName)` in `TarXzExtractor.kt` to strip container directory prefixes during extraction, added handling for hard links and recursive directory cleanup, and added pre-extraction cleanup in `EnvironmentManager.kt` to purge any stale nested extractions.
+- **Unit Tests:** Added `TarXzExtractorTest.kt` verifying prefix stripping for both prefixed archives and flat tarballs.
 
 ---
 
 ## 4. Next Steps
-1. Push changes to GitHub repository `mkdevofficial/sora` to trigger GitHub Actions build.
-2. User installs the new debug APK from GitHub Actions artifact.
-3. User navigates to "Set Up Environment", runs setup, and verifies with "Open Debian Shell".
-4. Await confirmation before proceeding to **Phase 2 (Flutter SDK installation inside the environment)**.
+1. Push changes to GitHub repository `mkdevofficial/sora` (`main`). (Done: commit `93ff11f`).
+2. Build debug APK on GitHub Actions (or local CI).
+3. Install the updated APK on device.
+4. On the device, open "Set Up Environment", tap "Start Setup" (or "Reset Environment" followed by "Start Setup").
+5. Verify that:
+   - PRoot temporary directory warning is resolved.
+   - Smoke test passes: `Debian Userland Smoke Test OK` and `uname -a` output displayed.
+   - Status updates to `Ready` with "Open Debian Shell" button active.
+   - Launching terminal allows interactive command execution inside Debian.
+6. Await confirmation before starting **Phase 2 (Flutter SDK installation inside the environment)**.
