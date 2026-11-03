@@ -1,0 +1,34 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "JSON",
+  "scopeName": "source.json",
+  "patterns": [
+    {
+      "name": "constant.language.json",
+      "match": "\\b(true|false|null)\\b"
+    },
+    {
+      "name": "constant.numeric.json",
+      "match": "-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?"
+    },
+    {
+      "name": "string.quoted.double.json",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "name": "constant.character.escape.json",
+          "match": "\\\\([\"\\\\/bfnrt]|u[0-9a-fA-F]{4})"
+        }
+      ]
+    },
+    {
+      "name": "punctuation.separator.dictionary.key-value.json",
+      "match": ":"
+    },
+    {
+      "name": "punctuation.separator.dictionary.pair.json",
+      "match": ","
+    }
+  ]
+}

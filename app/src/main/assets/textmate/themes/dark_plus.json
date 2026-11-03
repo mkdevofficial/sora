@@ -1,0 +1,86 @@
+{
+  "$schema": "vscode://schemas/color-theme",
+  "name": "Dark+ (default dark)",
+  "type": "dark",
+  "colors": {
+    "editor.background": "#1E1E1E",
+    "editor.foreground": "#D4D4D4",
+    "editorLineNumber.foreground": "#858585",
+    "editorLineNumber.activeForeground": "#C6C6C6",
+    "editorCursor.foreground": "#AEAFAD",
+    "editor.selectionBackground": "#264F78",
+    "editor.inactiveSelectionBackground": "#3A3D41"
+  },
+  "tokenColors": [
+    {
+      "name": "Function declarations",
+      "scope": ["entity.name.function", "support.function"],
+      "settings": {
+        "foreground": "#DCDCAA"
+      }
+    },
+    {
+      "name": "Types, classes and interfaces",
+      "scope": ["entity.name.type", "entity.name.class", "support.class", "support.type"],
+      "settings": {
+        "foreground": "#4EC9B0"
+      }
+    },
+    {
+      "name": "Keywords",
+      "scope": ["keyword", "keyword.control", "storage.type", "storage.modifier"],
+      "settings": {
+        "foreground": "#569CD6"
+      }
+    },
+    {
+      "name": "Strings",
+      "scope": ["string", "string.quoted"],
+      "settings": {
+        "foreground": "#CE9178"
+      }
+    },
+    {
+      "name": "Numbers",
+      "scope": ["constant.numeric"],
+      "settings": {
+        "foreground": "#B5CEA8"
+      }
+    },
+    {
+      "name": "Constants and Language Built-ins",
+      "scope": ["constant.language", "constant.character"],
+      "settings": {
+        "foreground": "#569CD6"
+      }
+    },
+    {
+      "name": "Variables",
+      "scope": ["variable", "variable.parameter", "variable.other"],
+      "settings": {
+        "foreground": "#9CDCFE"
+      }
+    },
+    {
+      "name": "Comments",
+      "scope": ["comment", "comment.line", "comment.block"],
+      "settings": {
+        "foreground": "#6A9955"
+      }
+    },
+    {
+      "name": "Operators",
+      "scope": ["keyword.operator"],
+      "settings": {
+        "foreground": "#D4D4D4"
+      }
+    },
+    {
+      "name": "Punctuation and Delimiters",
+      "scope": ["punctuation"],
+      "settings": {
+        "foreground": "#D4D4D4"
+      }
+    }
+  ]
+}

@@ -207,12 +207,67 @@ During on-device testing on Android arm64, the bootstrap pipeline successfully e
 
 ---
 
+# Phase 4 Report — Code Editor, File Management & Background Mode
+
+## 1. What Was Done
+
+### 1.1 Sora Editor & TextMate Syntax Highlighting
+- Integrated modern Sora Editor (`io.github.rosemoe:editor-bom:0.24.5`, `editor`, and `language-textmate`).
+- Configured VS Code Dark+ theme (`dark_plus.json`).
+- Bundled TextMate language grammars in `app/src/main/assets/textmate/`:
+  - **Dart** (`dart.tmLanguage.json`): Keywords, classes, methods, annotations, strings, operators.
+  - **YAML** (`yaml.tmLanguage.json`): Keys, values, comments for `pubspec.yaml`.
+  - **JSON** (`json.tmLanguage.json`): Key-value pairs, primitives.
+  - **Markdown** (`markdown.tmLanguage.json`): Headers, code blocks, formatting.
+  - Master languages manifest (`languages.json`).
+- **`EditorThemeManager.kt`**: Initializes `FileProviderRegistry` with `AssetsFileResolver`, loads Dark+ theme into `ThemeRegistry`, registers grammars, and maps file extensions to language definitions dynamically.
+
+### 1.2 Programmatic Editor Controller (`EditorController.kt`)
+- Direct controls for the active `CodeEditor`:
+  - `undo()` and `redo()`.
+  - `insertSymbol(symbol)`: Inserts characters/brackets/keywords at cursor position.
+  - `gotoLine(line)`: Navigates cursor to requested 1-based line number.
+  - `search(query, matchCase, regex)`, `findNext()`, `findPrevious()`, `stopSearch()`.
+  - `replace(replacement)` and `replaceAll(replacement)`.
+
+### 1.3 Tabbed Editor Interface (`TabbedEditorView.kt` & `EditorTab.kt`)
+- Multi-document tab bar with:
+  - Language-specific color icons (Dart: blue, YAML: orange, JSON: green).
+  - Dirty indicator (`•`) showing unsaved modifications.
+  - Tab close buttons and tab switching.
+  - Docked floating Find & Replace search bar with previous/next matches and replace all.
+  - "Go to Line" numerical jump dialog.
+
+### 1.4 Symbols Row & Keyboard Toolbar (`EditorToolbarRow.kt`)
+- Extra keys row docked directly above the Android soft keyboard:
+  - Essential coding symbols: `TAB` (`  `), `{`, `}`, `(`, `)`, `[`, `]`, `;`, `:`, `=`, `<`, `>`, `"`, `'`, `$`, `_`, `.`, `/`, `!`, `?`, `|`, `\`, `@`, `&`.
+  - Quick action buttons: Undo, Redo, Find & Replace, Go to Line, and Save.
+
+### 1.5 Project File Explorer Drawer (`FileExplorerDrawer.kt`)
+- Hierarchical tree view showing project files and directories (excluding `build/`, `.dart_tool/`, `.git/`).
+- Expand / collapse folders with state retention (with `lib/` expanded by default).
+- File operations:
+  - **New File**: Create files with subpath support (e.g. `lib/models/user.dart`).
+  - **New Folder**: Create nested directories (e.g. `lib/widgets`).
+  - **Rename**: Rename any file or folder.
+  - **Delete**: Recursive deletion with confirmation dialog.
+
+### 1.6 Auto-Save & Hot Reload Integration
+- Configured debounced auto-save (1.5 seconds) in `SoraEditorView.kt` using `ContentChangeEvent`.
+- On save (manual or auto-save), if a `flutter run -d web-server` session is active, Flide automatically sends Hot Reload (`r`) to the runner process, updating the WebView preview immediately.
+
+### 1.7 Background Execution Mode
+- Added `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` permission in `AndroidManifest.xml`.
+- Starting `IdeService` with a partial wake lock on app launch in `MainActivity.kt`.
+- Added a "Background Execution" card on `HomeScreen.kt` with a direct one-tap button to exempt Flide from battery optimization, ensuring PRoot and the Flutter web server run uninterrupted when the screen is locked or the app is minimized.
+
+### 1.8 Unit Testing
+- Added `EditorTabTest.kt`: Tests editor tab data model, dirty state management, and tab properties.
+
+---
+
 ## 2. Next Steps
 1. Build debug APK on GitHub Actions (`mkdevofficial/sora`).
 2. Install APK on real device.
-3. In Flide:
-   - Tap **New Project** and create a project (e.g. `counter_app`).
-   - Open the IDE screen and tap **Run**.
-   - Verify the counter app displays in the in-app WebView.
-   - Switch to the Editor tab, make a change (e.g. modify counter text or theme color in `lib/main.dart`), tap **Save** (or tap ⚡ Hot Reload).
-   - Verify the change immediately reflects in the WebView without losing state!
+3. Test editor with VS Code Dark+ theme, Dart syntax highlighting, symbols row, tabs, and auto-save hot-reloading.
+4. Verify background execution with battery optimization disabled.

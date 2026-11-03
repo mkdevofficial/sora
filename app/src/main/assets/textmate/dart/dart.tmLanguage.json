@@ -1,0 +1,83 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Dart",
+  "scopeName": "source.dart",
+  "patterns": [
+    {
+      "name": "comment.line.double-slash.dart",
+      "match": "//.*$"
+    },
+    {
+      "name": "comment.block.dart",
+      "begin": "/\\*",
+      "end": "\\*/"
+    },
+    {
+      "name": "string.quoted.triple.dart",
+      "begin": "'''|\"\"\"",
+      "end": "'''|\"\"\""
+    },
+    {
+      "name": "string.quoted.single.dart",
+      "begin": "'",
+      "end": "'",
+      "patterns": [
+        {
+          "name": "constant.character.escape.dart",
+          "match": "\\\\."
+        }
+      ]
+    },
+    {
+      "name": "string.quoted.double.dart",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "name": "constant.character.escape.dart",
+          "match": "\\\\."
+        }
+      ]
+    },
+    {
+      "name": "constant.numeric.dart",
+      "match": "\\b(0[xX][0-9a-fA-F]+|[0-9]+(\\.[0-9]+)?([eE][+-]?[0-9]+)?)\\b"
+    },
+    {
+      "name": "constant.language.dart",
+      "match": "\\b(true|false|null)\\b"
+    },
+    {
+      "name": "keyword.control.dart",
+      "match": "\\b(if|else|for|in|while|do|switch|case|default|break|continue|return|try|catch|finally|throw|rethrow|assert|yield|await|async)\\b"
+    },
+    {
+      "name": "keyword.declaration.dart",
+      "match": "\\b(class|mixin|extension|enum|typedef|typedef|part|of|import|export|show|hide|library|as)\\b"
+    },
+    {
+      "name": "storage.modifier.dart",
+      "match": "\\b(abstract|sealed|base|interface|final|const|late|required|static|covariant|factory|external|get|set)\\b"
+    },
+    {
+      "name": "storage.type.primitive.dart",
+      "match": "\\b(void|int|double|num|bool|String|List|Map|Set|Iterable|Future|Stream|dynamic|var|Object|Never)\\b"
+    },
+    {
+      "name": "entity.name.type.class.dart",
+      "match": "\\b([A-Z][A-Za-z0-9_]*)\\b"
+    },
+    {
+      "name": "variable.language.dart",
+      "match": "\\b(this|super)\\b"
+    },
+    {
+      "name": "entity.other.attribute-name.dart",
+      "match": "@[A-Za-z0-9_]+"
+    },
+    {
+      "name": "keyword.operator.dart",
+      "match": "(\\+|\\-|\\*|\\/|%|~/|==|!=|<=|>=|<|>|&&|\\|\\||!|\\?|:|\\?\\?|\\?\\?=|\\+=|-=|\\*=|\\/=|=>)"
+    }
+  ]
+}

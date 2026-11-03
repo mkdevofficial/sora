@@ -1,0 +1,36 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Markdown",
+  "scopeName": "text.html.markdown",
+  "patterns": [
+    {
+      "name": "markup.heading.markdown",
+      "match": "^#{1,6}\\s+.*$"
+    },
+    {
+      "name": "markup.bold.markdown",
+      "match": "(\\*\\*|__)(.*?)\\1"
+    },
+    {
+      "name": "markup.italic.markdown",
+      "match": "(\\*|_)(.*?)\\1"
+    },
+    {
+      "name": "markup.raw.inline.markdown",
+      "match": "`[^`]+`"
+    },
+    {
+      "name": "markup.raw.block.markdown",
+      "begin": "```",
+      "end": "```"
+    },
+    {
+      "name": "markup.underline.link.markdown",
+      "match": "\\[([^\\]]+)\\]\\(([^\\)]+)\\)"
+    },
+    {
+      "name": "punctuation.definition.list_item.markdown",
+      "match": "^\\s*([*+-]|\\d+\\.)\\s+"
+    }
+  ]
+}

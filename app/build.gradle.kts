@@ -79,6 +79,11 @@ dependencies {
     // Termux Terminal View & Emulator (Native PTY terminal)
     implementation("com.github.termux.termux-app:terminal-view:0.118.2")
 
+    // Sora Editor (Code editor, TextMate syntax highlighting)
+    implementation(platform("io.github.rosemoe:editor-bom:0.24.5"))
+    implementation("io.github.rosemoe:editor")
+    implementation("io.github.rosemoe:language-textmate")
+
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 

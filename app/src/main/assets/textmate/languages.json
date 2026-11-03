@@ -1,0 +1,28 @@
+{
+  "languages": [
+    {
+      "name": "Dart",
+      "scopeName": "source.dart",
+      "grammar": "textmate/dart/dart.tmLanguage.json",
+      "filenames": ["*.dart"]
+    },
+    {
+      "name": "YAML",
+      "scopeName": "source.yaml",
+      "grammar": "textmate/yaml/yaml.tmLanguage.json",
+      "filenames": ["*.yaml", "*.yml"]
+    },
+    {
+      "name": "JSON",
+      "scopeName": "source.json",
+      "grammar": "textmate/json/json.tmLanguage.json",
+      "filenames": ["*.json"]
+    },
+    {
+      "name": "Markdown",
+      "scopeName": "text.html.markdown",
+      "grammar": "textmate/markdown/markdown.tmLanguage.json",
+      "filenames": ["*.md", "*.markdown"]
+    }
+  ]
+}

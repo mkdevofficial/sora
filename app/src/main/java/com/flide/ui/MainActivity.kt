@@ -37,6 +37,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        // Ensure background service with partial wake lock is active
+        com.flide.service.IdeService.start(this, "Flide IDE active in background")
+
         val app = FlideApplication.instance
         setContent {
             val settings by app.settingsRepository.settingsFlow.collectAsState(initial = IdeSettings())

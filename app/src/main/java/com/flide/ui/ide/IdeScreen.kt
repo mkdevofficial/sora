@@ -48,7 +48,7 @@ import com.flide.FlideApplication
 import com.flide.flutter.run.FlutterRunState
 import com.flide.project.FlutterProject
 import com.flide.ui.console.RunConsoleView
-import com.flide.ui.editor.ProjectFileEditorView
+import com.flide.ui.editor.TabbedEditorView
 import com.flide.ui.preview.WebPreviewView
 import com.flide.ui.terminal.TerminalScreen
 
@@ -217,7 +217,7 @@ fun IdeScreen(
                     )
                 }
                 IdeTab.EDITOR -> {
-                    ProjectFileEditorView(
+                    TabbedEditorView(
                         project = project,
                         onFileSaved = {
                             if (runState is FlutterRunState.Running) {
