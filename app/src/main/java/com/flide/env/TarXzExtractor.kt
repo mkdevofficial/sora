@@ -122,7 +122,7 @@ object TarXzExtractor {
     private fun createSymlink(linkFile: File, targetPath: String) {
         linkFile.parentFile?.mkdirs()
         try {
-            Os.unlink(linkFile.absolutePath)
+            Os.remove(linkFile.absolutePath)
         } catch (_: Exception) {
             if (linkFile.isDirectory) {
                 linkFile.deleteRecursively()
@@ -142,7 +142,7 @@ object TarXzExtractor {
         val srcFile = File(targetDir, srcRelative)
         linkFile.parentFile?.mkdirs()
         try {
-            Os.unlink(linkFile.absolutePath)
+            Os.remove(linkFile.absolutePath)
         } catch (_: Exception) {
             if (linkFile.isDirectory) {
                 linkFile.deleteRecursively()
