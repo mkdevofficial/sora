@@ -65,6 +65,7 @@ import java.util.Locale
 @Composable
 fun SetupEnvironmentScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToTerminal: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -209,7 +210,16 @@ fun SetupEnvironmentScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                if (!isRunning) {
+                if (state is EnvironmentState.Ready) {
+                    Button(
+                        onClick = onNavigateToTerminal,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(text = "Open Debian Shell")
+                    }
+                } else if (!isRunning) {
                     Button(
                         onClick = { envManager.startSetup() },
                         modifier = Modifier.weight(1f)

@@ -42,6 +42,7 @@ import java.util.Locale
 @Composable
 fun HomeScreen(
     onNavigateToSetup: () -> Unit,
+    onNavigateToTerminal: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val app = FlideApplication.instance
@@ -113,10 +114,19 @@ fun HomeScreen(
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Spacer(modifier = Modifier.height(12.dp))
-                    Button(
-                        onClick = onNavigateToSetup
-                    ) {
-                        Text(text = if (settings.environmentConfigured) "View Environment" else "Set Up Environment")
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (settings.environmentConfigured) {
+                            Button(onClick = onNavigateToTerminal) {
+                                Text(text = "Open Terminal")
+                            }
+                            Button(onClick = onNavigateToSetup) {
+                                Text(text = "Environment Details")
+                            }
+                        } else {
+                            Button(onClick = onNavigateToSetup) {
+                                Text(text = "Set Up Environment")
+                            }
+                        }
                     }
                 }
             }

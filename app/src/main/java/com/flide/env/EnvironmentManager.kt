@@ -28,6 +28,8 @@ class EnvironmentManager(
     private val settingsRepository: SettingsRepository,
     private val coroutineScope: CoroutineScope
 ) {
+    val prootRunner = ProotRunner(context, storageLayout)
+
     private val _state = MutableStateFlow<EnvironmentState>(EnvironmentState.Idle(isInstalled = false))
     val state: StateFlow<EnvironmentState> = _state.asStateFlow()
 
@@ -140,19 +142,34 @@ class EnvironmentManager(
         log("[✓] Checksum matches: ${EnvironmentConfig.ROOTFS_SHA256}")
 
         // 5. Extract Rootfs
-        _state.value = EnvironmentState.Extracting(0f)
+        _state.value = EnvironmentState.Extracting(0f, "Extracting packages...")
         log("[5/6] Extracting root filesystem to: ${storageLayout.rootfsDir.absolutePath}...")
-        extractRootfsArchive(archiveFile)
+        TarXzExtractor.extract(archiveFile, storageLayout.rootfsDir) { progress, name ->
+            _state.value = EnvironmentState.Extracting(progress, name)
+        }
         log("[✓] Extraction completed successfully.")
 
         // 6. Configure Environment
-        _state.value = EnvironmentState.Configuring("Setting up DNS and hosts configuration")
+        _state.value = EnvironmentState.Configuring("Configuring DNS, networking, and system tools")
         log("[6/6] Configuring rootfs environment...")
         configureNetworkAndUser()
 
-        settingsRepository.setEnvironmentConfigured(true)
-        _state.value = EnvironmentState.Ready
-        log("=== Debian arm64 Environment is Ready! ===")
+        log("    Running smoke test inside PRoot...")
+        val exitCode = prootRunner.execute(
+            command = listOf("/bin/sh", "-c", "echo 'Debian Userland Smoke Test OK' && uname -a"),
+            asRoot = true,
+            onOutput = { log("    [proot] $it") }
+        )
+
+        if (exitCode == 0) {
+            settingsRepository.setEnvironmentConfigured(true)
+            _state.value = EnvironmentState.Ready
+            log("=== Debian arm64 Environment is Ready! ===")
+        } else {
+            val errorMsg = "PRoot smoke test exited with code $exitCode"
+            log("[x] $errorMsg")
+            _state.value = EnvironmentState.Error(errorMsg)
+        }
     }
 
     private fun stageProotBinaries() {
@@ -177,7 +194,7 @@ class EnvironmentManager(
                 setExecutablePermissions(targetFile)
                 log("    Staged: ${targetFile.name}")
             } catch (e: Exception) {
-                // If not found in assets, check nativeLibraryDir fallback
+                // Check nativeLibraryDir fallback
                 val fallbackLib = File(context.applicationInfo.nativeLibraryDir, "lib${assetName.removeSuffix(".2")}")
                 if (fallbackLib.exists()) {
                     log("    Using fallback native library: ${fallbackLib.name}")
@@ -284,46 +301,6 @@ class EnvironmentManager(
         log("    Calculated SHA-256: $calculatedHex")
         log("    Expected SHA-256:   ${EnvironmentConfig.ROOTFS_SHA256}")
         return@withContext calculatedHex.equals(EnvironmentConfig.ROOTFS_SHA256, ignoreCase = true)
-    }
-
-    private suspend fun extractRootfsArchive(archiveFile: File) = withContext(Dispatchers.IO) {
-        storageLayout.rootfsDir.mkdirs()
-
-        // Handle extraction with bundled tools or system tar
-        // If native proot and tar are available:
-        log("    Target extraction directory: ${storageLayout.rootfsDir.absolutePath}")
-        _state.value = EnvironmentState.Extracting(0.5f, "Extracting rootfs packages...")
-
-        // Attempt tar extraction via process if available, or through Kotlin
-        val tarCandidates = listOf("/system/bin/tar", "/vendor/bin/tar", "tar")
-        var extracted = false
-
-        for (tarCmd in tarCandidates) {
-            try {
-                val pb = ProcessBuilder(
-                    tarCmd,
-                    "-xf",
-                    archiveFile.absolutePath,
-                    "-C",
-                    storageLayout.rootfsDir.absolutePath
-                )
-                pb.redirectErrorStream(true)
-                val process = pb.start()
-                val exitCode = process.waitFor()
-                if (exitCode == 0) {
-                    extracted = true
-                    log("    Extracted using system tar: $tarCmd")
-                    break
-                }
-            } catch (_: Exception) {
-                // Try next
-            }
-        }
-
-        if (!extracted) {
-            log("    System tar not directly usable; initiating extraction verification.")
-            _state.value = EnvironmentState.Extracting(1.0f, "Completed")
-        }
     }
 
     private suspend fun configureNetworkAndUser() = withContext(Dispatchers.IO) {

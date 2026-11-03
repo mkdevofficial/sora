@@ -18,11 +18,13 @@ import com.flide.FlideApplication
 import com.flide.data.settings.IdeSettings
 import com.flide.ui.env.SetupEnvironmentScreen
 import com.flide.ui.home.HomeScreen
+import com.flide.ui.terminal.TerminalScreen
 import com.flide.ui.theme.FlideTheme
 
 enum class Screen {
     Home,
-    SetupEnvironment
+    SetupEnvironment,
+    Terminal
 }
 
 class MainActivity : ComponentActivity() {
@@ -43,7 +45,8 @@ class MainActivity : ComponentActivity() {
                     when (currentScreen) {
                         Screen.Home -> {
                             HomeScreen(
-                                onNavigateToSetup = { currentScreen = Screen.SetupEnvironment }
+                                onNavigateToSetup = { currentScreen = Screen.SetupEnvironment },
+                                onNavigateToTerminal = { currentScreen = Screen.Terminal }
                             )
                         }
                         Screen.SetupEnvironment -> {
@@ -51,6 +54,15 @@ class MainActivity : ComponentActivity() {
                                 currentScreen = Screen.Home
                             }
                             SetupEnvironmentScreen(
+                                onNavigateBack = { currentScreen = Screen.Home },
+                                onNavigateToTerminal = { currentScreen = Screen.Terminal }
+                            )
+                        }
+                        Screen.Terminal -> {
+                            BackHandler {
+                                currentScreen = Screen.Home
+                            }
+                            TerminalScreen(
                                 onNavigateBack = { currentScreen = Screen.Home }
                             )
                         }
