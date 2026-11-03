@@ -25,6 +25,7 @@ class FlideTerminalClient(
 
     var isCtrlActive: Boolean = false
     var isAltActive: Boolean = false
+    var currentTextSize: Int = 36
 
     // --- TerminalSessionClient ---
 
@@ -78,9 +79,8 @@ class FlideTerminalClient(
         val tv = terminalView ?: return scale
         if (scale < 0.9f || scale > 1.1f) {
             val change = if (scale > 1.0f) 2 else -2
-            val current = tv.textSize
-            val newSize = (current + change).coerceIn(16, 80)
-            tv.setTextSize(newSize)
+            currentTextSize = (currentTextSize + change).coerceIn(16, 80)
+            tv.setTextSize(currentTextSize)
             return 1.0f
         }
         return scale

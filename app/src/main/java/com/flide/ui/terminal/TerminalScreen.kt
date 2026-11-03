@@ -92,6 +92,7 @@ fun TerminalScreen(
     // Keep active modifiers synced with client
     terminalClient.isCtrlActive = isCtrlActive
     terminalClient.isAltActive = isAltActive
+    terminalClient.currentTextSize = textSizePx
 
     fun startNewSession(view: TerminalView?) {
         terminalSessionRef?.finishIfRunning()
