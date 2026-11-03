@@ -12,17 +12,21 @@ import java.io.InputStreamReader
  * Handles executing commands and interactive processes inside the Debian rootfs using PRoot.
  */
 class ProotRunner(
-    private val context: Context,
-    private val storageLayout: StorageLayout
+    private val storageLayout: StorageLayout,
+    private val nativeLibraryDir: String? = null
 ) {
+    constructor(context: Context, storageLayout: StorageLayout) : this(
+        storageLayout = storageLayout,
+        nativeLibraryDir = try { context.applicationInfo.nativeLibraryDir } catch (_: Exception) { null }
+    )
 
     fun getExecutableProotPath(): String {
         return if (storageLayout.prootBin.exists() && storageLayout.prootBin.canExecute()) {
             storageLayout.prootBin.absolutePath
         } else {
             // Documented fallback: native library directory
-            val fallback = File(context.applicationInfo.nativeLibraryDir, "libproot.so")
-            if (fallback.exists()) fallback.absolutePath else storageLayout.prootBin.absolutePath
+            val fallback = nativeLibraryDir?.let { File(it, "libproot.so") }
+            if (fallback != null && fallback.exists()) fallback.absolutePath else storageLayout.prootBin.absolutePath
         }
     }
 
@@ -59,12 +63,12 @@ class ProotRunner(
     fun getProotEnvironment(): Map<String, String> {
         val env = mutableMapOf<String, String>()
         val libDir = storageLayout.libDir.absolutePath
-        val nativeDir = context.applicationInfo.nativeLibraryDir
+        val nativeDir = nativeLibraryDir ?: ""
 
-        env["LD_LIBRARY_PATH"] = "$libDir:$nativeDir"
+        env["LD_LIBRARY_PATH"] = if (nativeDir.isNotEmpty()) "$libDir:$nativeDir" else libDir
         if (storageLayout.loaderBin.exists()) {
             env["PROOT_LOADER"] = storageLayout.loaderBin.absolutePath
-        } else {
+        } else if (nativeDir.isNotEmpty()) {
             val fallbackLoader = File(nativeDir, "libloader.so")
             if (fallbackLoader.exists()) {
                 env["PROOT_LOADER"] = fallbackLoader.absolutePath

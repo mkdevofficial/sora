@@ -1,7 +1,5 @@
 package com.flide.env
 
-import android.content.Context
-import android.content.pm.ApplicationInfo
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -27,15 +25,13 @@ class ProotRunnerTest {
 
     @Test
     fun testProotCommandConstruction() {
-        // Create mock proot binary
         val prootBin = layout.prootBin
         prootBin.createNewFile()
         prootBin.setExecutable(true)
 
-        // Mock context without android runtime
         val runner = ProotRunner(
-            context = createDummyContext(),
-            storageLayout = layout
+            storageLayout = layout,
+            nativeLibraryDir = File(baseDir, "lib").absolutePath
         )
 
         val cmd = runner.buildProotCommand(
@@ -61,8 +57,8 @@ class ProotRunnerTest {
     @Test
     fun testProotEnvironmentVariables() {
         val runner = ProotRunner(
-            context = createDummyContext(),
-            storageLayout = layout
+            storageLayout = layout,
+            nativeLibraryDir = File(baseDir, "lib").absolutePath
         )
 
         val env = runner.getProotEnvironment()
@@ -74,22 +70,5 @@ class ProotRunnerTest {
         assertEquals("C.UTF-8", env["LANG"])
         assertEquals("/tmp", env["TMPDIR"])
         assertTrue(env.containsKey("LD_LIBRARY_PATH"))
-    }
-
-    private fun createDummyContext(): Context {
-        // Lightweight Context proxy for unit testing nativeLibraryDir
-        val proxy = java.lang.reflect.Proxy.newProxyInstance(
-            Context::class.java.classLoader,
-            arrayOf(Context::class.java)
-        ) { _, method, _ ->
-            if (method.name == "getApplicationInfo") {
-                ApplicationInfo().apply {
-                    nativeLibraryDir = File(baseDir, "lib").absolutePath
-                }
-            } else {
-                null
-            }
-        }
-        return proxy as Context
     }
 }
