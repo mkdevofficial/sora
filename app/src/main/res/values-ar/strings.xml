@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">فليد</string>
+    <string name="app_name">سورا</string>
     <string name="app_tagline">بيئة تطوير فلاتر المتنقلة</string>
-    <string name="service_notification_channel_name">محرك فليد في الخلفية</string>
+    <string name="service_notification_channel_name">محرك سورا في الخلفية</string>
     <string name="service_notification_channel_desc">يحافظ على نشاط بيئة فلاتر ونظام لينكس</string>
-    <string name="service_running_title">خدمة بيئة فليد</string>
+    <string name="service_running_title">خدمة بيئة سورا</string>
     <string name="service_running_content">بيئة فلاتر تعمل في الخلفية</string>
     <string name="action_stop">إيقاف</string>
     <string name="tab_preview">المعاينة</string>

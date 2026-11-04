@@ -1,6 +1,6 @@
-# Flide — Flutter Mobile IDE
+# Sora — Flutter Mobile IDE
 
-Flide is an on-device Flutter IDE for Android (arm64-v8a). It embeds a Linux userland (Debian arm64 under `proot`), installs the Flutter SDK inside the userland on demand, and enables writing, running, and hot-reloading Flutter apps directly on your phone using `flutter run -d web-server` with an in-app preview.
+Sora is an on-device Flutter IDE for Android (arm64-v8a). It embeds a Linux userland (Debian arm64 under `proot`), installs the Flutter SDK inside the userland on demand, and enables writing, running, and hot-reloading Flutter apps directly on your phone using `flutter run -d web-server` with an in-app preview.
 
 ---
 
@@ -8,7 +8,7 @@ Flide is an on-device Flutter IDE for Android (arm64-v8a). It embeds a Linux use
 
 ```
 +-------------------------------------------------------------+
-|                     Flide Android App                       |
+|                      Sora Android App                       |
 |                                                             |
 |  +--------------------+  +-------------------------------+  |
 |  | Jetpack Compose UI |  | Sora Editor / Terminal View   |  |
@@ -39,10 +39,11 @@ Flide is an on-device Flutter IDE for Android (arm64-v8a). It embeds a Linux use
 
 ### Key Technical Specifications
 
+- **Package Name / Application ID:** `com.mokhtarxz.sora`
 - **Platform:** Native Android (Kotlin). Jetpack Compose for application UI; classic Views via `AndroidView` for Sora Editor and Termux Terminal View.
 - **Target SDK:** `28` (Android 9.0 Pie) — enables executing binaries from the application's internal data directory.
 - **Min SDK:** `26` (Android 8.0 Oreo).
-- **Compile SDK:** `35` (Android 15).
+- **Compile SDK:** `36` (Android 16).
 - **ABI:** `arm64-v8a` only.
 - **Long-Running Process Isolation:** `IdeService` runs as an Android Foreground Service with a persistent notification and partial wake lock (`PARTIAL_WAKE_LOCK`), preventing background termination by the OS.
 
@@ -67,7 +68,7 @@ Both the Android editor and Flutter inside PRoot access the same project files o
 ## 3. Package Structure
 
 ```
-com.flide
+com.mokhtarxz.sora
 ├── data
 │   ├── settings    # Settings storage backed by DataStore Preferences
 │   ├── storage     # Cache and storage cleaner (pub-cache, build/, downloads)

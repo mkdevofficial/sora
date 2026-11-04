@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.flide"
+    namespace = "com.mokhtarxz.sora"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.flide"
+        applicationId = "com.mokhtarxz.sora"
         minSdk = 26
         targetSdk = 28
         versionCode = 1
@@ -22,9 +22,25 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            val keystoreFile = file("sora-release.jks")
+            if (keystoreFile.exists()) {
+                storeFile = keystoreFile
+                storePassword = System.getenv("SORA_KEYSTORE_PASSWORD") ?: "sora2026"
+                keyAlias = System.getenv("SORA_KEY_ALIAS") ?: "sora"
+                keyPassword = System.getenv("SORA_KEY_PASSWORD") ?: "sora2026"
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            val releaseSigning = signingConfigs.findByName("release")
+            if (releaseSigning?.storeFile?.exists() == true) {
+                signingConfig = releaseSigning
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
