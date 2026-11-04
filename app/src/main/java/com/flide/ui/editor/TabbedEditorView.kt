@@ -20,9 +20,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.FindNext
-import androidx.compose.material.icons.filled.FindPrevious
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
@@ -369,10 +369,10 @@ fun TabbedEditorView(
                         )
 
                         IconButton(onClick = { editorController.findPrevious() }, modifier = Modifier.size(32.dp)) {
-                            Icon(Icons.Default.FindPrevious, contentDescription = "Previous")
+                            Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Previous")
                         }
                         IconButton(onClick = { editorController.findNext() }, modifier = Modifier.size(32.dp)) {
-                            Icon(Icons.Default.FindNext, contentDescription = "Next")
+                            Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Next")
                         }
                         IconButton(
                             onClick = {

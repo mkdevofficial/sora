@@ -132,17 +132,14 @@ class DartLspConnectionProvider(
         }
     }
 
-    override fun getInputStream(): InputStream {
-        return serverToClientIn
-    }
+    override val inputStream: InputStream
+        get() = serverToClientIn
 
-    override fun getOutputStream(): OutputStream {
-        return clientToServerOut
-    }
+    override val outputStream: OutputStream
+        get() = clientToServerOut
 
-    override fun isClosed(): Boolean {
-        return isTerminated || process == null
-    }
+    override val isClosed: Boolean
+        get() = isTerminated || process == null
 
     @Synchronized
     override fun close() {

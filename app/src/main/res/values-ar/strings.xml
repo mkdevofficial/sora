@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">فليد</string>
+    <string name="app_tagline">بيئة تطوير فلاتر المتنقلة</string>
+    <string name="service_notification_channel_name">محرك فليد في الخلفية</string>
+    <string name="service_notification_channel_desc">يحافظ على نشاط بيئة فلاتر ونظام لينكس</string>
+    <string name="service_running_title">خدمة بيئة فليد</string>
+    <string name="service_running_content">بيئة فلاتر تعمل في الخلفية</string>
+    <string name="action_stop">إيقاف</string>
+    <string name="tab_preview">المعاينة</string>
+    <string name="tab_editor">المحرر</string>
+    <string name="tab_console">سجل التشغيل</string>
+    <string name="tab_terminal">الطرفية</string>
+    <string name="btn_run">تشغيل</string>
+    <string name="btn_hot_reload">إعادة تحميل سريع</string>
+    <string name="btn_hot_restart">إعادة تشغيل كاملة</string>
+    <string name="btn_storage_cleaner">تنظيف التخزين</string>
+    <string name="btn_new_project">مشروع جديد</string>
+</resources>

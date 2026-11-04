@@ -21,11 +21,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.CleaningServices
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Help
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material3.AlertDialog
@@ -49,6 +52,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,8 +64,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.flide.FlideApplication
 import com.flide.data.settings.IdeSettings
+import com.flide.data.update.AppRelease
 import com.flide.project.FlutterProject
+import com.flide.ui.guide.Android12GuideDialog
 import com.flide.ui.project.CreateProjectDialog
+import com.flide.ui.storage.StorageCleanerDialog
+import com.flide.ui.update.AppUpdateDialog
+import kotlinx.coroutines.launch
+import java.io.File
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -79,14 +89,34 @@ fun HomeScreen(
     val flutterState by app.flutterManager.state.collectAsState()
     val projects by app.projectManager.projects.collectAsState()
 
+    val coroutineScope = rememberCoroutineScope()
     var showCreateProjectDialog by remember { mutableStateOf(false) }
     var projectToDelete by remember { mutableStateOf<FlutterProject?>(null) }
+    var showCleanerDialog by remember { mutableStateOf(false) }
+    var showGuideDialog by remember { mutableStateOf(false) }
+    var availableRelease by remember { mutableStateOf<AppRelease?>(null) }
 
     val storageLayout = app.storageLayout
     val freeSpaceGb = storageLayout.getAvailableStorageBytes() / (1024f * 1024f * 1024f)
 
     LaunchedEffect(Unit) {
         app.projectManager.scanProjects()
+        val updateRes = app.appUpdateManager.checkForUpdates()
+        if (updateRes.isSuccess && updateRes.getOrNull()?.isNewer == true) {
+            availableRelease = updateRes.getOrNull()
+        }
+    }
+
+    if (showCleanerDialog) {
+        StorageCleanerDialog(onDismiss = { showCleanerDialog = false })
+    }
+
+    if (showGuideDialog) {
+        Android12GuideDialog(onDismiss = { showGuideDialog = false })
+    }
+
+    availableRelease?.let { rel ->
+        AppUpdateDialog(release = rel, onDismiss = { availableRelease = null })
     }
 
     if (showCreateProjectDialog) {
@@ -144,7 +174,22 @@ fun HomeScreen(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface
-                )
+                ),
+                actions = {
+                    IconButton(onClick = { showCleanerDialog = true }) {
+                        Icon(
+                            imageVector = Icons.Default.CleaningServices,
+                            contentDescription = "Storage Cleaner",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    IconButton(onClick = { showGuideDialog = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Help,
+                            contentDescription = "Android 12+ Optimization Guide"
+                        )
+                    }
+                }
             )
         },
         modifier = modifier
@@ -461,6 +506,19 @@ fun HomeScreen(
                                     Icon(Icons.Default.Terminal, contentDescription = null, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text("Shell")
+                                }
+
+                                OutlinedButton(
+                                    onClick = {
+                                        coroutineScope.launch {
+                                            val destZip = File(storageLayout.downloadsDir, "${project.name}_backup.zip")
+                                            app.projectBackupManager.exportProjectToZip(project, destZip)
+                                        }
+                                    }
+                                ) {
+                                    Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Export ZIP")
                                 }
                             }
                         }

@@ -69,13 +69,19 @@ Both the Android editor and Flutter inside PRoot access the same project files o
 ```
 com.flide
 ├── data
-│   └── settings    # Settings storage backed by DataStore Preferences
-├── editor          # Sora Editor bindings, config, and tab state management
+│   ├── settings    # Settings storage backed by DataStore Preferences
+│   ├── storage     # Cache and storage cleaner (pub-cache, build/, downloads)
+│   └── update      # In-app updater checking GitHub Releases
+├── editor          # Sora Editor, TextMate themes, and Dart LSP integration
+│   └── lsp         # Protocol bridge, diagnostics container, and language server manager
 ├── env             # PRoot environment controller, rootfs bootstrap, storage layout
 ├── flutter         # Flutter SDK manager, run controller, hot reload IPC
-├── github          # GitHub OAuth Device Flow and Actions APK build integration
+│   └── run         # Web-server process lifecycle and hot reload/restart controller
+├── git             # Git repository manager, diff engine, branch switcher, and parser
+├── github          # GitHub Actions cloud APK build integration and OAuth device flow
+├── project         # Project discovery, template generator, and backup/restore
 ├── service         # IdeService foreground service and wake lock management
-├── terminal        # Termux terminal session management and view bindings
+├── terminal        # Termux multi-tab terminal management and view bindings
 └── ui              # Jetpack Compose UI screens, theme, and components
 ```
 
@@ -125,3 +131,20 @@ Flide incorporates open-source components with explicit licensing:
 | **Termux Terminal Emulator** | GPL-3.0 / Apache-2.0 | Terminal view and emulation core adapted from Termux and Jackpal's Android-Terminal-Emulator. |
 | **PRoot** | GPL-2.0 | User-space chroot/bind mount emulation engine. |
 | **Debian Rootfs** | Debian Social Contract / Multi-license | Debian GNU/Linux arm64 base system packages. |
+
+---
+
+## 7. Features & Capabilities
+
+- **Debian Userland inside PRoot**: Real Linux environment on Android arm64 with apt, git, clang, and cmake.
+- **On-Device Flutter Toolchain**: Shallow clone of Flutter stable, linux-arm64 Dart SDK, web toolchain pre-cached.
+- **Run & Live Preview**: Runs `flutter run -d web-server --web-hostname 127.0.0.1` inside userland with in-app WebView, live Hot Reload (`r`), and Hot Restart (`R`).
+- **VS Code-Style Sora Editor**: Full TextMate grammar highlighting (Dart, YAML, JSON, Markdown), Dark+ theme, tabbed navigation, and soft-keyboard symbols toolbar.
+- **Dart Language Server (LSP)**: Protocol bridge over stdio with container path translation, type diagnostics, problem panel, and `dart format` on demand or save.
+- **Multi-Tab Terminal**: Concurrent interactive bash login shells, Termux-style extra keys row, and clipboard paste.
+- **Integrated Git**: Real `git` commands, porcelain status parsing, diff viewer, commit creator, and branch switcher.
+- **Cloud APK Builds**: Automatic `.github/workflows/build_apk.yml` generation, workflow dispatch, artifact polling, download, and on-device package installer launcher.
+- **Storage Cleaner**: Cache cleaner for pub cache, build outputs, and downloads.
+- **Backup & Restore**: Export/import projects as clean `.zip` archives.
+- **Android 12+ Optimization**: Foreground service with wake lock, PPK guide, and battery optimization exemption.
+- **Localization**: English and Arabic UI with native RTL layout.

@@ -1,8 +1,18 @@
 <resources>
     <string name="app_name">Flide</string>
+    <string name="app_tagline">Flutter Mobile IDE</string>
     <string name="service_notification_channel_name">Flide Background Engine</string>
     <string name="service_notification_channel_desc">Keeps the Flutter runtime and Linux environment active</string>
     <string name="service_running_title">Flide IDE Service</string>
     <string name="service_running_content">Flutter environment is active</string>
     <string name="action_stop">Stop</string>
+    <string name="tab_preview">Preview</string>
+    <string name="tab_editor">Editor</string>
+    <string name="tab_console">Console</string>
+    <string name="tab_terminal">Terminal</string>
+    <string name="btn_run">Run</string>
+    <string name="btn_hot_reload">Hot Reload</string>
+    <string name="btn_hot_restart">Hot Restart</string>
+    <string name="btn_storage_cleaner">Storage Cleaner</string>
+    <string name="btn_new_project">New Project</string>
 </resources>

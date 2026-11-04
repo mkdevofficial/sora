@@ -61,7 +61,7 @@ fun SoraEditorView(
 
                 // Configure Font and Appearance
                 typefaceText = Typeface.MONOSPACE
-                textSize = 14f
+                setTextSize(14f)
                 setColorScheme(SchemeDarcula())
 
                 // Editor Features

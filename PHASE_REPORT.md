@@ -357,10 +357,101 @@ During on-device testing on Android arm64, the bootstrap pipeline successfully e
 
 ---
 
-## 2. Next Steps
-1. Build debug APK on GitHub Actions (`mkdevofficial/sora`).
-2. Install APK on real device.
-3. In Flide:
-   - Open Terminal tab and verify multi-tab creation and switching works smoothly.
-   - Run `git status`, `flutter pub add`, or other CLI commands in the terminal.
-   - Open Git sheet in the IDE, inspect diffs, stage files, and make a commit.
+# Phase 7 Report — GitHub Integration & Cloud APK Builds
+
+## 1. What Was Done
+
+### 1.1 GitHub REST API & OAuth Client (`GitHubApiClient.kt` & `GitHubModels.kt`)
+- Implemented pure Kotlin HTTP client with no third-party HTTP overhead:
+  - **Device Flow Auth**: Device authorization via `https://github.com/login/device/code` and polling `https://github.com/login/oauth/access_token`.
+  - **Personal Access Token (PAT)** support with user validation (`/user`).
+  - **Workflow Dispatch**: Triggers GitHub Actions workflows via `POST /repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches`.
+  - **Run Polling**: Queries active run lifecycle states (`queued`, `in_progress`, `completed`, `conclusion`) via `GET /repos/{owner}/{repo}/actions/runs`.
+  - **Artifact Fetching & Download**: Enumerates artifacts and downloads ZIP archives with HTTP 302/S3 redirect handling and progress callback.
+
+### 1.2 Cloud APK Build Automation (`CloudBuildManager.kt`)
+- Full cloud build orchestration:
+  - **Workflow Generator**: Generates production-ready `.github/workflows/build_apk.yml` in the project:
+    - Sets up JDK 17 (Temurin).
+    - Caches Flutter SDK and Gradle dependencies (`subosito/flutter-action@v2`).
+    - Executes `flutter build apk --release --split-per-abi`.
+    - Uploads `app-arm64-v8a-release.apk` artifact.
+  - Commits workflow into repository and triggers the workflow.
+  - Polls workflow execution every 5 seconds until `conclusion: success`.
+  - Downloads release artifact ZIP into `downloadsDir`.
+  - Extracts the release APK using in-memory `ZipInputStream`.
+  - Launches Android Package Installer using `FileProvider` (`ACTION_VIEW`, `application/vnd.android.package-archive`).
+
+### 1.3 Cloud Build UI Sheet (`CloudBuildBottomSheet.kt`)
+- Integrated into `IdeScreen.kt` top action bar via the Cloud Build icon (`Icons.Default.CloudUpload`):
+  - Config inputs for Repository Owner, Repository Name, Branch, and GitHub Token.
+  - "Trigger Cloud Build" action button.
+  - Live pipeline status:
+    - `Preparing`: Workflow file generation and dispatch.
+    - `Building`: Live run ID and runner status (`QUEUED` / `IN_PROGRESS`).
+    - `Downloading`: Determinate progress bar showing download percentage.
+    - `ReadyToInstall`: Success card with "Install APK on Device" button.
+    - `Error`: Error banner with details and "Try Again" recovery.
+
+### 1.4 System Permissions & FileProvider Configuration
+- Added `REQUEST_INSTALL_PACKAGES` permission in `AndroidManifest.xml`.
+- Configured `androidx.core.content.FileProvider` in `AndroidManifest.xml` with `res/xml/file_paths.xml` granting content URI access for downloads.
+
+### 1.5 Unit Testing
+- Added `CloudBuildManagerTest.kt`: Tests workflow YAML generation, ensuring all essential steps (JDK 17, Flutter cache, split-per-abi, artifact upload) are present and valid.
+
+---
+
+# Phase 8 Report — Polish, Resilience & Final System Integration
+
+## 1. What Was Done
+
+### 1.1 Android 12+ First-Run Guide (`Android12GuideDialog.kt`)
+- Created interactive optimization guide dialog explaining mitigations for modern Android process limits:
+  - **Phantom Process Killer (PPK)**: Explains the 32 child-process limit introduced in Android 12, with one-tap copyable ADB command:
+    `adb shell "/system/bin/device_config put activity_manager max_phantom_processes 2147483647"`
+    and instructions for Developer Options -> "Disable child process restrictions" on Android 12L+.
+  - **Battery Optimization Exemption**: One-tap shortcut launching system battery optimization intent.
+
+### 1.2 Storage Cleaner (`StorageCleaner.kt` & `StorageCleanerDialog.kt`)
+- Full storage management suite:
+  - Analyzes cleanable disk space across:
+    - **Pub Package Cache**: `~/.pub-cache/`
+    - **Project Build Outputs**: `build/` directories across all projects
+    - **Temporary Downloads**: Cached APKs and ZIP archives in `downloads/`
+  - "Clean All" action running non-interactive cleanup to free storage.
+
+### 1.3 Project Backup & Restore (`ProjectBackupManager.kt`)
+- Project portability:
+  - **ZIP Export**: Exports any Flutter project as a clean `.zip` archive (excluding `build/`, `.dart_tool/`, `.git/`) into `downloads/` for backup or sharing.
+  - **ZIP Import**: Extracts external project archives into the internal project workspace.
+
+### 1.4 In-App Updater (`AppUpdateManager.kt` & `AppUpdateDialog.kt`)
+- Automatic update detection:
+  - Queries `https://api.github.com/repos/mkdevofficial/sora/releases/latest`.
+  - Performs semver comparisons against app version (`0.1.0`).
+  - Displays release title, markdown release notes, and direct download button.
+
+### 1.5 Hardware Keyboard Shortcuts
+- Added physical keyboard listener (`Modifier.onPreviewKeyEvent`):
+  - `Ctrl + S`: Trigger Save & Hot Reload.
+  - `Ctrl + R`: Trigger Hot Restart.
+
+### 1.6 Localization (English & Arabic)
+- Added full Arabic localization in `res/values-ar/strings.xml` with native RTL layout support alongside English defaults in `res/values/strings.xml`.
+
+---
+
+## 2. Project Milestone Summary (Phases 0 through 8 Complete)
+
+| Phase | Description | Status |
+| :--- | :--- | :--- |
+| **Phase 0** | Project Skeleton, Compose UI, Foreground Service, DataStore, CI | ✅ Complete |
+| **Phase 1** | Debian arm64 Rootfs, PRoot Engine, PTY Interactive Terminal | ✅ Complete & Verified on Device |
+| **Phase 2** | Flutter SDK Bootstrap (stable), Dart arm64, Web Toolchain | ✅ Complete & Verified on Device |
+| **Phase 3** | Project Manager, `flutter run -d web-server`, In-App WebView Preview, Live Hot Reload (⚡ `r`) / Hot Restart (🔄 `R`) | ✅ Complete |
+| **Phase 4** | Sora Editor, TextMate Highlighting (Dart/YAML/JSON/MD), VS Code Dark+ Theme, Multi-File Tabs, Symbols Row, File Explorer | ✅ Complete |
+| **Phase 5** | Dart Language Server (LSP) Bridge, Type Diagnostics, Problems Panel, Code Formatting (`dart format`), Lightweight Mode | ✅ Complete |
+| **Phase 6** | Multi-Tab Terminal Sessions, Extra Keys Toolbar, Real Git Integration (`git status`, diff, commit, branch checkout) | ✅ Complete |
+| **Phase 7** | GitHub Actions Cloud APK Builds, OAuth Device Flow / PAT, Artifact Downloader & On-Device APK Installer | ✅ Complete |
+| **Phase 8** | Android 12+ PPK Guide, Storage Cleaner, Project Backup/Restore, In-App Updater, Keyboard Shortcuts, Arabic Localization | ✅ Complete |

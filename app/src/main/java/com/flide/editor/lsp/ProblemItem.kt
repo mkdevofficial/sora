@@ -17,9 +17,17 @@ data class ProblemItem(
 ) {
     companion object {
         fun fromDiagnostic(file: File, diagnostic: Diagnostic): ProblemItem {
+            val messageText = diagnostic.message?.let { msgEither ->
+                if (msgEither.isLeft) {
+                    msgEither.left
+                } else {
+                    msgEither.right?.value
+                }
+            } ?: "Unknown diagnostic"
+
             return ProblemItem(
                 file = file,
-                message = diagnostic.message ?: "Unknown diagnostic",
+                message = messageText,
                 severity = diagnostic.severity ?: DiagnosticSeverity.Information,
                 line = (diagnostic.range?.start?.line ?: 0) + 1,
                 column = (diagnostic.range?.start?.character ?: 0) + 1,

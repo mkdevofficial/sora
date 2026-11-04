@@ -39,6 +39,18 @@ class FlideApplication : Application() {
     lateinit var gitManager: com.flide.git.GitManager
         private set
 
+    lateinit var cloudBuildManager: com.flide.github.CloudBuildManager
+        private set
+
+    lateinit var storageCleaner: com.flide.data.storage.StorageCleaner
+        private set
+
+    lateinit var projectBackupManager: com.flide.project.ProjectBackupManager
+        private set
+
+    lateinit var appUpdateManager: com.flide.data.update.AppUpdateManager
+        private set
+
     override fun onCreate() {
         super.onCreate()
         instance = this
@@ -81,6 +93,21 @@ class FlideApplication : Application() {
         )
         gitManager = com.flide.git.GitManager(
             prootRunner = environmentManager.prootRunner
+        )
+        cloudBuildManager = com.flide.github.CloudBuildManager(
+            storageLayout = storageLayout,
+            gitManager = gitManager,
+            coroutineScope = appScope
+        )
+        storageCleaner = com.flide.data.storage.StorageCleaner(
+            storageLayout = storageLayout,
+            prootRunner = environmentManager.prootRunner
+        )
+        projectBackupManager = com.flide.project.ProjectBackupManager(
+            storageLayout = storageLayout
+        )
+        appUpdateManager = com.flide.data.update.AppUpdateManager(
+            storageLayout = storageLayout
         )
     }
 

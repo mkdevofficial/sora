@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.flide"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.flide"
@@ -43,6 +43,7 @@ android {
 
     kotlinOptions {
         jvmTarget = "17"
+        freeCompilerArgs += listOf("-Xskip-metadata-version-check")
     }
 
     buildFeatures {
@@ -52,6 +53,9 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+        jniLibs {
+            useLegacyPackaging = true
         }
     }
 }

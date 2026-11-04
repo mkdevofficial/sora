@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.CallSplit
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.RestartAlt
@@ -43,6 +44,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -52,6 +59,7 @@ import com.flide.project.FlutterProject
 import com.flide.ui.console.RunConsoleView
 import com.flide.ui.editor.TabbedEditorView
 import com.flide.ui.git.GitBottomSheet
+import com.flide.ui.github.CloudBuildBottomSheet
 import com.flide.ui.preview.WebPreviewView
 import com.flide.ui.terminal.TerminalScreen
 
@@ -77,6 +85,7 @@ fun IdeScreen(
 
     var selectedTabIndex by remember { mutableIntStateOf(IdeTab.PREVIEW.ordinal) }
     var showGitSheet by remember { mutableStateOf(false) }
+    var showCloudBuildSheet by remember { mutableStateOf(false) }
     val isRunning = runController.isRunning
 
     if (showGitSheet) {
@@ -87,7 +96,29 @@ fun IdeScreen(
         )
     }
 
+    if (showCloudBuildSheet) {
+        CloudBuildBottomSheet(
+            project = project,
+            onDismiss = { showCloudBuildSheet = false }
+        )
+    }
+
     Scaffold(
+        modifier = modifier.onPreviewKeyEvent { event ->
+            if (event.type == KeyEventType.KeyDown && event.isCtrlPressed) {
+                when (event.key) {
+                    Key.S -> {
+                        runController.sendHotReload()
+                        true
+                    }
+                    Key.R -> {
+                        runController.sendHotRestart()
+                        true
+                    }
+                    else -> false
+                }
+            } else false
+        },
         topBar = {
             TopAppBar(
                 title = {
@@ -162,6 +193,15 @@ fun IdeScreen(
                         )
                     }
 
+                    // Cloud Build APK Action
+                    IconButton(onClick = { showCloudBuildSheet = true }) {
+                        Icon(
+                            imageVector = Icons.Default.CloudUpload,
+                            contentDescription = "Build APK via GitHub Actions",
+                            tint = Color(0xFF69F0AE)
+                        )
+                    }
+
                     Spacer(modifier = Modifier.width(4.dp))
 
                     // Run / Stop Action Toggle
@@ -220,8 +260,7 @@ fun IdeScreen(
                     label = { Text("Terminal") }
                 )
             }
-        },
-        modifier = modifier
+        }
     ) { innerPadding ->
         Box(
             modifier = Modifier
