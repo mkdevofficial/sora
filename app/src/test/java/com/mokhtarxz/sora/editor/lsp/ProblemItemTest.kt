@@ -34,7 +34,7 @@ class ProblemItemTest {
     fun testFromDiagnostic_defaultsWhenRangeNull() {
         val file = File("/home/flide/projects/counter_app/lib/main.dart")
         val diagnostic = Diagnostic().apply {
-            message = "Unused import"
+            setMessage(org.eclipse.lsp4j.jsonrpc.messages.Either.forLeft("Unused import"))
             severity = DiagnosticSeverity.Warning
         }
 
